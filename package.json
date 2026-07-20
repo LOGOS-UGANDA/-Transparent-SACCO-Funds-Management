@@ -1,0 +1,35 @@
+{
+  "name": "logos-fee-transparency",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Transparent functional fees on Logos blockchain — smart contracts lock institutional fees so they are only released for their stated purpose.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite build && vite preview",
+    "compile": "npx hardhat compile",
+    "deploy:local": "npx hardhat run scripts/deploy.js --network localhost",
+    "deploy:logos": "npx hardhat run scripts/deploy.js --network logos",
+    "node": "npx hardhat node"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0",
+    "recharts": "^2.12.0",
+    "lucide-react": "^0.400.0",
+    "framer-motion": "^11.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0",
+    "hardhat": "^2.22.0",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.40",
+    "tailwindcss": "^3.4.7"
+  }
+}

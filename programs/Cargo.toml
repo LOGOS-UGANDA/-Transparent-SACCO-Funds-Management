@@ -1,0 +1,36 @@
+[workspace]
+members = [
+    "fee_transparency/core",
+    "fee_transparency",
+    "fee_transparency/methods",
+]
+exclude = [
+    "fee_transparency/methods/guest",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+
+[workspace.dependencies]
+nssa_core = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.2.0", features = ["host"], package = "lee_core" }
+serde = { version = "1.0", features = ["derive"] }
+borsh = { version = "1.5", features = ["derive"] }
+risc0-zkvm = { version = "=3.0.5" }
+fee_transparency_core = { path = "fee_transparency/core" }
+fee_transparency_program = { path = "fee_transparency" }
+
+[workspace.lints.rust]
+rust_2018_idioms = { level = "deny", priority = -1 }
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+style = { level = "warn", priority = -1 }
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"
+unwrap_used = "deny"

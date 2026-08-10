@@ -1,0 +1,13 @@
+[package]
+name = "fee_transparency_core"
+version = "0.1.0"
+edition = "2021"
+
+[lints]
+workspace = true
+
+[dependencies]
+nssa_core = { workspace = true }
+spel-framework-macros = { git = "https://github.com/logos-co/spel.git", tag = "v0.6.0", package = "spel-framework-macros" }
+borsh = { workspace = true }
+serde = { workspace = true }

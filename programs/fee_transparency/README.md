@@ -1,23 +1,57 @@
 # fee_transparency (LEZ program)
 
-Scaffold for the Transparent SACCO fee-lock program on the Logos Execution Zone.
+LEZ program scaffold for Transparent SACCO fee locking, category allocation, and multi-sig release.
 
-## Intent
+Mirrors the product model in `prototype/contracts/FeeTransparency.sol`, adapted to LEZ account-oriented design (Rust / RISC Zero / SPEL).
 
-Port the product logic from `prototype/contracts/FeeTransparency.sol` to a native LEZ program:
+## Layout
 
-- Register institutions
-- Create fee categories with percentage allocations
-- Pay and lock fees into categories
-- Request and multi-sig approve releases
-- Public verification of payment state
+```text
+fee_transparency/
+├── core/                 # Instruction enum + Borsh account types
+├── src/                  # Pure state-transition handlers
+└── methods/
+    ├── build.rs          # risc0 embed_methods
+    └── guest/            # #[lez_program] guest binary
+```
 
-Prefer public LEZ account state for payer-visible audit trails.
+## Instructions
 
-## Status
+| Instruction | Purpose |
+|-------------|---------|
+| `RegisterInstitution` | Create institution registry account |
+| `VerifyInstitution` | Mark institution verified |
+| `AddApprover` | Register a multi-sig approver |
+| `CreateFeeCategory` | Category with basis-point allocation |
+| `PayFees` | Lock payment + allocate to categories |
+| `RequestRelease` | Propose release with purpose/evidence |
+| `ApproveRelease` / `RejectRelease` | Multi-sig votes |
+| `ExecuteRelease` | Finalize approved release |
 
-Not implemented yet. Next steps:
+Prefer **public** LEZ accounts for payer-visible audit trails.
 
-1. Follow LEZ program tooling (`spel`, `wallet`, reference programs in [lez-programs](https://github.com/logos-blockchain/lez-programs)).
-2. Define instructions and account layout for the capabilities above.
-3. Deploy to testnet sequencer and exercise via wallet CLI before wiring `modules/sacco_core`.
+## Build / test
+
+Requires the Logos LEZ + SPEL toolchains (see [lez-programs](https://github.com/logos-blockchain/lez-programs)).
+
+```bash
+cd programs
+# Unit-test host-side handlers (skips guest ZK build when deps resolve)
+RISC0_DEV_MODE=1 cargo test -p fee_transparency_program
+
+# Guest binary (Docker / risczero toolchain)
+cargo risczero build --manifest-path fee_transparency/methods/guest/Cargo.toml
+```
+
+Deploy later with:
+
+```bash
+wallet deploy-program target/guest/fee_transparency.bin
+```
+
+## Scaffold gaps (next)
+
+1. Wire `AddApprover` handler + category list into `PayFees` / `CreateFeeCategory` guest txs.
+2. Move value with token-program chained calls (not just ledger fields).
+3. Generate IDL (`spel generate-idl` or `idl-gen`) into `artifacts/`.
+4. Integration tests through the zkVM.

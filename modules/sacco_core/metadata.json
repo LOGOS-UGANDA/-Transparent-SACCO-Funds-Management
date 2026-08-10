@@ -1,0 +1,25 @@
+{
+  "name": "sacco_core",
+  "display_name": "Transparent SACCO Core",
+  "version": "0.1.0",
+  "type": "core",
+  "interface": "universal",
+  "category": "finance",
+  "description": "Core module for Transparent SACCO — fee locking, verification, and multi-sig release APIs for the LEZ fee_transparency program.",
+  "main": "sacco_core_plugin",
+  "dependencies": [],
+
+  "nix": {
+    "packages": {
+      "build": [],
+      "runtime": []
+    },
+    "external_libraries": [],
+    "cmake": {
+      "find_packages": [],
+      "extra_sources": [],
+      "extra_include_dirs": [],
+      "extra_link_libraries": []
+    }
+  }
+}

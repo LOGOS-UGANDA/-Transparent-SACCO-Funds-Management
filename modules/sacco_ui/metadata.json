@@ -1,0 +1,25 @@
+{
+  "name": "sacco_ui",
+  "display_name": "Transparent SACCO",
+  "version": "0.1.0",
+  "type": "ui_qml",
+  "category": "finance",
+  "description": "QML UI for Transparent SACCO — pay fees, verify payments, and track multi-sig releases on Logos.",
+  "view": "Main.qml",
+  "icon": null,
+  "dependencies": ["sacco_core"],
+
+  "nix": {
+    "packages": {
+      "build": [],
+      "runtime": []
+    },
+    "external_libraries": [],
+    "cmake": {
+      "find_packages": [],
+      "extra_sources": [],
+      "extra_include_dirs": [],
+      "extra_link_libraries": []
+    }
+  }
+}

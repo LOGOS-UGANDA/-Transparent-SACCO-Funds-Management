@@ -79,9 +79,9 @@ Docs: [docs.logos.co](https://docs.logos.co/) · [Basecamp](https://logos.co/bas
 | Area | Status |
 |------|--------|
 | Product research & UX flows | Captured in `prototype/` |
-| LEZ fee-transparency program | Scaffold — not implemented |
-| Core + UI Logos modules | Scaffold — not implemented |
-| Standalone + Basecamp packaging | Planned |
+| LEZ fee-transparency program | Scaffold: types, handlers, guest entrypoints (`programs/fee_transparency`) |
+| Core + UI Logos modules | Scaffold: `sacco_core` + `sacco_ui` (Nix / QML) |
+| Standalone + Basecamp packaging | Planned (`.lgx` + filled `logos-repo.json`) |
 | Public module repository | Placeholder `logos-repo.json` |
 
 ---

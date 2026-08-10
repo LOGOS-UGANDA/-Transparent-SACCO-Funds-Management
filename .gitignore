@@ -1,8 +1,29 @@
+# OS / editor
+.DS_Store
+*.swp
+*.log
+.idea/
+.vscode/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Nix / Logos build artifacts
+result
+result-*
+.direnv/
+*.lgx
+
+# Node (prototype)
 node_modules/
 dist/
-.env
 cache/
-src/artifacts/
 coverage/
 typechain-types/
-*.log
+src/artifacts/
+
+# Rust / LEZ
+target/
+**/methods/guest/target/

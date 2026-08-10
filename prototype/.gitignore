@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+cache/
+src/artifacts/
+coverage/
+typechain-types/
+*.log

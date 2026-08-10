@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "name": "transparent-sacco-modules",
+  "displayName": "Transparent SACCO",
+  "description": "Fee transparency for SACCOs, universities, and cooperatives on Logos — lock fees to stated purposes with multi-sig release and a public audit trail.",
+  "homepage": "https://github.com/kaksv/Transparent-Sacco-on-logos",
+  "indexUrl": "",
+  "trustedSigners": []
+}

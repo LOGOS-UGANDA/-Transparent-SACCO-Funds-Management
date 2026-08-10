@@ -1,130 +1,127 @@
-# LOGOS Fee Transparency Platform
+# Transparent SACCO on Logos
 
 **Every fee accounted for. Every shilling transparent.**
 
-A blockchain-powered platform that locks institutional fees using smart contracts, ensuring funds are only released for their stated purpose. Built on the Logos blockchain for universities, SACCOs, and cooperatives in Uganda.
+A Logos-native platform that locks institutional fees on the [Logos Execution Zone (LEZ)](https://docs.logos.co/), so funds are only released for their stated purpose. Built for universities, SACCOs, and cooperatives — shippable both as a **standalone app** and as a **Basecamp module** users can install from a package repository.
 
 ---
 
-## The Problem
+## The problem
 
 Fees paid to schools, universities, SACCOs, and cooperatives disappear into systems with no accountability. Payers have no way to verify where the money goes.
 
-We used **Makerere University** and **Victoria University** as real research anchors to test whether a transparency solution could work at that scale. The answer was clear: **it can, and it's needed.**
+We used **Makerere University** and **Victoria University** as research anchors to test whether a transparency solution could work at institutional scale. It can — and it is needed.
 
-## The Solution
+## The solution
 
-Smart contracts lock every fee payment and automatically allocate funds to predefined categories. Funds can only be released through multi-signature approval for their stated purpose.
+On-chain logic locks every fee payment and allocates funds to predefined categories. Release requires multi-signature approval tied to a stated purpose and evidence. Anyone can verify a payment’s allocation and status.
 
-### Key Features
-
-- **Immutable Fee Locking** — Payments are locked on-chain and allocated to categories
-- **Real-Time Verification** — Anyone can verify where their money sits
-- **Multi-Sig Release** — Funds require multiple approvals before release
-- **Full Audit Trail** — Every transaction is permanently recorded on-chain
-- **Category Allocation** — Tuition, library, ICT, sports — each with exact percentages
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Blockchain | Logos (EVM-compatible) |
-| Smart Contracts | Solidity 0.8.19 |
-| Frontend | React 18 + Vite |
-| Styling | Tailwind CSS |
-| Charts | Recharts |
-| Web3 | ethers.js v6 |
-| Dev Tools | Hardhat |
+| Capability | What it does |
+|------------|--------------|
+| Immutable fee locking | Payments are locked on LEZ and allocated to categories |
+| Real-time verification | Anyone can verify where funds sit |
+| Multi-sig release | Funds need multiple approvals before release |
+| Full audit trail | Public LEZ state records every material action |
+| Category allocation | Tuition, library, ICT, sports — each with exact percentages |
 
 ---
 
-## Quick Start
+## Architecture (Logos-native)
 
-### 1. Install Dependencies
+This is **not** an EVM / Solidity dApp. Logos LEZ runs RISC-V programs (RISC Zero zkVM). The product ships as Logos modules packaged as `.lgx` files.
 
-```bash
-npm install
+```text
+┌─────────────────────────────────────────────────────────┐
+│  Transparent SACCO                                       │
+│  • programs/fee_transparency  — LEZ program              │
+│  • modules/sacco_core         — core module (APIs)       │
+│  • modules/sacco_ui           — QML UI module            │
+└───────────────────────────┬─────────────────────────────┘
+                            │
+            ┌───────────────┴───────────────┐
+            ▼                               ▼
+   logos-standalone-app              Logos Basecamp
+   (focused desktop app)             (shell + Package Manager)
 ```
 
-### 2. Run the Frontend (Demo Mode)
+| Layer | Technology |
+|-------|------------|
+| Execution | Logos Execution Zone (LEZ) / LEE |
+| On-chain logic | LEZ program (Rust guest) |
+| App runtime | Logos Core modules (`.lgx`) |
+| UI | QML UI module (`logos-standalone-app` or Basecamp) |
+| Distribution | `logos-repo.json` catalogue + release index |
+| Prototype (non-production) | React + Solidity demo under `prototype/` |
+
+Docs: [docs.logos.co](https://docs.logos.co/) · [Basecamp](https://logos.co/basecamp)
+
+---
+
+## Repository layout
+
+```text
+.
+├── README.md
+├── logos-repo.json              # Basecamp package-repository entry (fill in when publishing)
+├── docs/                        # Product & integration notes
+├── programs/
+│   └── fee_transparency/        # LEZ program (scaffold)
+├── modules/
+│   ├── sacco_core/              # Headless core module (scaffold)
+│   └── sacco_ui/                # QML UI module (scaffold)
+└── prototype/                   # Earlier React + Hardhat demo (not Logos-native)
+```
+
+---
+
+## Status
+
+| Area | Status |
+|------|--------|
+| Product research & UX flows | Captured in `prototype/` |
+| LEZ fee-transparency program | Scaffold — not implemented |
+| Core + UI Logos modules | Scaffold — not implemented |
+| Standalone + Basecamp packaging | Planned |
+| Public module repository | Placeholder `logos-repo.json` |
+
+---
+
+## Getting started
+
+### 1. Install Basecamp (recommended)
+
+Download from [logos.co/basecamp](https://logos.co/basecamp). Use it to explore the stack (wallet, LEZ, Package Manager) while this product is under construction.
+
+### 2. Explore the product prototype (optional)
+
+The web demo illustrates flows and research narrative. It uses a local Hardhat/Solidity stand-in and is **not** the Logos production path.
 
 ```bash
+cd prototype
+npm install
 npm run dev
 ```
 
-The app runs with demo data out of the box — no blockchain connection required.
+See [prototype/README.md](./prototype/README.md).
 
-### 3. Deploy Smart Contract (Local)
+### 3. Build the Logos-native product (next)
 
-```bash
-# Start local blockchain
-npx hardhat node
+1. Implement `programs/fee_transparency` as an LEZ program (port of the fee-lock / multi-sig model).
+2. Scaffold modules with [`logos-module-builder`](https://docs.logos.co/core/build-modules/build-and-run-a-logos-core-module).
+3. Preview UI via `logos-standalone-app` (`nix run` in the UI module).
+4. Package `.lgx`, publish a release index, and point `logos-repo.json` at it.
+5. Users add the repo in Basecamp: **Settings → Package Repositories → Add**, then install from Applications.
 
-# Deploy and seed data (in another terminal)
-npm run deploy:local
-```
-
-### 4. Deploy to Logos Blockchain
-
-```bash
-# Copy and configure environment
-cp .env.example .env
-# Edit .env with your LOGOS_RPC_URL and PRIVATE_KEY
-
-npm run deploy:logos
-```
+More detail: [docs/architecture.md](./docs/architecture.md) and [docs/basecamp-publishing.md](./docs/basecamp-publishing.md).
 
 ---
 
-## Smart Contract
-
-The `FeeTransparency.sol` contract includes:
-
-| Function | Description |
-|----------|------------|
-| `registerInstitution()` | Register a university, SACCO, or cooperative |
-| `createFeeCategory()` | Define fee categories with percentage allocations |
-| `payFees()` | Pay fees — auto-allocated and locked on-chain |
-| `requestRelease()` | Request fund release with purpose and evidence |
-| `approveRelease()` | Multi-sig approval for fund release |
-| `verifyPaymentByRef()` | Public verification of any payment |
-
----
-
-## Project Structure
-
-```
-├── contracts/
-│   └── FeeTransparency.sol      # Core smart contract
-├── scripts/
-│   └── deploy.js                # Deployment & seeding script
-├── src/
-│   ├── components/              # Reusable UI components
-│   ├── context/                 # React context (state management)
-│   ├── pages/                   # Application pages
-│   │   ├── Dashboard.jsx        # Overview with charts & stats
-│   │   ├── Institutions.jsx     # Browse registered institutions
-│   │   ├── InstitutionDetail.jsx # Detailed view with categories
-│   │   ├── PayFees.jsx          # Fee payment flow
-│   │   ├── VerifyPayment.jsx    # Payment verification
-│   │   ├── Releases.jsx         # Fund release tracking
-│   │   └── About.jsx            # Project information
-│   └── utils/                   # Helpers, ABI, demo data
-├── hardhat.config.js
-├── tailwind.config.js
-└── package.json
-```
-
----
-
-## Research Anchors
+## Research anchors
 
 - **Makerere University** — 45,000+ students, 7+ functional fee categories per semester
-- **Victoria University** — 12,000+ students, technology and library fees with no visibility
+- **Victoria University** — 12,000+ students, technology and library fees with little payer visibility
 
-Both institutions were used to validate that blockchain transparency can operate at institutional scale.
+Both were used to validate that on-chain transparency can operate at institutional scale.
 
 ---
 

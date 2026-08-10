@@ -1,0 +1,269 @@
+{
+  "version": "0.1.0",
+  "name": "fee_transparency",
+  "instructions": [
+    {
+      "name": "initialize",
+      "accounts": [
+        { "name": "config", "writable": true, "signer": false, "init": false }
+      ],
+      "args": [
+        { "name": "token_program_id", "type": "program_id" }
+      ]
+    },
+    {
+      "name": "register_institution",
+      "accounts": [
+        { "name": "institution", "writable": true, "signer": false, "init": false },
+        { "name": "admin", "writable": false, "signer": true, "init": false }
+      ],
+      "args": [
+        { "name": "name", "type": "string" },
+        { "name": "registration_number", "type": "string" },
+        { "name": "institution_type", "type": { "defined": "InstitutionType" } },
+        { "name": "treasury", "type": "account_id" },
+        { "name": "required_approvals", "type": "u8" }
+      ]
+    },
+    {
+      "name": "verify_institution",
+      "accounts": [
+        { "name": "institution", "writable": true, "signer": false, "init": false },
+        { "name": "registrar", "writable": false, "signer": true, "init": false }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_institution_vault",
+      "accounts": [
+        { "name": "config", "writable": false, "signer": false, "init": false },
+        { "name": "institution", "writable": true, "signer": false, "init": false },
+        { "name": "token_definition", "writable": false, "signer": false, "init": false },
+        { "name": "vault", "writable": true, "signer": false, "init": false },
+        { "name": "admin", "writable": false, "signer": true, "init": false }
+      ],
+      "args": []
+    },
+    {
+      "name": "add_approver",
+      "accounts": [
+        { "name": "institution", "writable": true, "signer": false, "init": false },
+        { "name": "admin", "writable": false, "signer": true, "init": false }
+      ],
+      "args": [
+        { "name": "approver", "type": "account_id" }
+      ]
+    },
+    {
+      "name": "create_fee_category",
+      "accounts": [
+        { "name": "institution", "writable": true, "signer": false, "init": false },
+        { "name": "category", "writable": true, "signer": false, "init": false },
+        { "name": "admin", "writable": false, "signer": true, "init": false }
+      ],
+      "args": [
+        { "name": "name", "type": "string" },
+        { "name": "description", "type": "string" },
+        { "name": "allocated_percentage_bps", "type": "u16" }
+      ]
+    },
+    {
+      "name": "pay_fees",
+      "accounts": [
+        { "name": "config", "writable": false, "signer": false, "init": false },
+        { "name": "institution", "writable": true, "signer": false, "init": false },
+        { "name": "payment", "writable": true, "signer": false, "init": false },
+        { "name": "payer", "writable": false, "signer": true, "init": false },
+        { "name": "payer_holding", "writable": true, "signer": false, "init": false },
+        { "name": "vault", "writable": true, "signer": false, "init": false },
+        { "name": "category_0", "writable": true, "signer": false, "init": false },
+        { "name": "category_1", "writable": true, "signer": false, "init": false },
+        { "name": "category_2", "writable": true, "signer": false, "init": false },
+        { "name": "category_3", "writable": true, "signer": false, "init": false },
+        { "name": "category_4", "writable": true, "signer": false, "init": false },
+        { "name": "category_5", "writable": true, "signer": false, "init": false },
+        { "name": "category_6", "writable": true, "signer": false, "init": false },
+        { "name": "category_7", "writable": true, "signer": false, "init": false }
+      ],
+      "args": [
+        { "name": "payer_name", "type": "string" },
+        { "name": "reference_number", "type": "string" },
+        { "name": "amount", "type": "u128" }
+      ]
+    },
+    {
+      "name": "request_release",
+      "accounts": [
+        { "name": "institution", "writable": false, "signer": false, "init": false },
+        { "name": "category", "writable": false, "signer": false, "init": false },
+        { "name": "release", "writable": true, "signer": false, "init": false },
+        { "name": "admin", "writable": false, "signer": true, "init": false }
+      ],
+      "args": [
+        { "name": "amount", "type": "u128" },
+        { "name": "purpose", "type": "string" },
+        { "name": "evidence_hash", "type": "string" }
+      ]
+    },
+    {
+      "name": "approve_release",
+      "accounts": [
+        { "name": "institution", "writable": false, "signer": false, "init": false },
+        { "name": "release", "writable": true, "signer": false, "init": false },
+        { "name": "approver", "writable": false, "signer": true, "init": false }
+      ],
+      "args": []
+    },
+    {
+      "name": "reject_release",
+      "accounts": [
+        { "name": "institution", "writable": false, "signer": false, "init": false },
+        { "name": "release", "writable": true, "signer": false, "init": false },
+        { "name": "approver", "writable": false, "signer": true, "init": false }
+      ],
+      "args": []
+    },
+    {
+      "name": "execute_release",
+      "accounts": [
+        { "name": "config", "writable": false, "signer": false, "init": false },
+        { "name": "institution", "writable": true, "signer": false, "init": false },
+        { "name": "category", "writable": true, "signer": false, "init": false },
+        { "name": "release", "writable": true, "signer": false, "init": false },
+        { "name": "vault", "writable": true, "signer": false, "init": false },
+        { "name": "treasury_holding", "writable": true, "signer": false, "init": false }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ProgramConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "token_program_id", "type": "program_id" }
+        ]
+      }
+    },
+    {
+      "name": "Institution",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "name", "type": "string" },
+          { "name": "registration_number", "type": "string" },
+          { "name": "institution_type", "type": { "defined": "InstitutionType" } },
+          { "name": "admin", "type": "account_id" },
+          { "name": "treasury", "type": "account_id" },
+          { "name": "is_verified", "type": "bool" },
+          { "name": "is_active", "type": "bool" },
+          { "name": "total_fees_collected", "type": "u128" },
+          { "name": "total_fees_released", "type": "u128" },
+          { "name": "required_approvals", "type": "u8" },
+          { "name": "approvers", "type": { "vec": "account_id" } },
+          { "name": "category_ids", "type": { "vec": "account_id" } },
+          { "name": "token_definition_id", "type": { "option": "account_id" } },
+          { "name": "vault_id", "type": { "option": "account_id" } }
+        ]
+      }
+    },
+    {
+      "name": "FeeCategory",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "institution_id", "type": "account_id" },
+          { "name": "name", "type": "string" },
+          { "name": "description", "type": "string" },
+          { "name": "allocated_percentage_bps", "type": "u16" },
+          { "name": "total_collected", "type": "u128" },
+          { "name": "total_released", "type": "u128" },
+          { "name": "is_active", "type": "bool" }
+        ]
+      }
+    },
+    {
+      "name": "Payment",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "institution_id", "type": "account_id" },
+          { "name": "payer", "type": "account_id" },
+          { "name": "payer_name", "type": "string" },
+          { "name": "reference_number", "type": "string" },
+          { "name": "amount", "type": "u128" },
+          { "name": "status", "type": { "defined": "FeeStatus" } },
+          { "name": "allocations", "type": { "vec": { "defined": "FeeAllocation" } } }
+        ]
+      }
+    },
+    {
+      "name": "ReleaseRequest",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "institution_id", "type": "account_id" },
+          { "name": "category_id", "type": "account_id" },
+          { "name": "amount", "type": "u128" },
+          { "name": "purpose", "type": "string" },
+          { "name": "evidence_hash", "type": "string" },
+          { "name": "requested_by", "type": "account_id" },
+          { "name": "status", "type": { "defined": "ReleaseStatus" } },
+          { "name": "approvers", "type": { "vec": "account_id" } },
+          { "name": "rejectors", "type": { "vec": "account_id" } }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "InstitutionType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          { "name": "University" },
+          { "name": "Sacco" },
+          { "name": "Cooperative" },
+          { "name": "School" }
+        ]
+      }
+    },
+    {
+      "name": "FeeStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          { "name": "Locked" },
+          { "name": "PartiallyReleased" },
+          { "name": "FullyReleased" },
+          { "name": "Refunded" }
+        ]
+      }
+    },
+    {
+      "name": "ReleaseStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          { "name": "Pending" },
+          { "name": "Approved" },
+          { "name": "Rejected" },
+          { "name": "Executed" }
+        ]
+      }
+    },
+    {
+      "name": "FeeAllocation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "category_id", "type": "account_id" },
+          { "name": "amount", "type": "u128" },
+          { "name": "released", "type": "bool" }
+        ]
+      }
+    }
+  ],
+  "notes": "Hand-authored from the SPEL guest surface. Regenerate with spel/idl-gen when the toolchain is available; see docs/idl.md."
+}

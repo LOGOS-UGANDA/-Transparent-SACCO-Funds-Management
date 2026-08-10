@@ -38,6 +38,8 @@ pub fn register_institution(
         required_approvals,
         approvers: vec![admin.account_id],
         category_ids: vec![],
+        token_definition_id: None,
+        vault_id: None,
     };
 
     institution_account.account.data = (&institution).into();

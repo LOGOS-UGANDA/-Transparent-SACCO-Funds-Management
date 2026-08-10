@@ -2,14 +2,24 @@
 //!
 //! Account data uses Borsh. Instructions use serde (SPEL / wallet path).
 //! Prefer public LEZ accounts so payers can audit allocations.
+//!
+//! Custody model: see `docs/custody.md` — institution vault PDA + category ledger.
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use nssa_core::account::{AccountId, Data};
+use nssa_core::{
+    account::{AccountId, Data},
+    program::{PdaSeed, ProgramId},
+};
 use serde::{Deserialize, Serialize};
 use spel_framework_macros::account_type;
 
 /// Basis points denominator: 10_000 = 100%.
 pub const BPS_DENOMINATOR: u16 = 10_000;
+
+/// Max category accounts accepted by the `PayFees` guest entry (v1).
+pub const MAX_PAY_FEE_CATEGORIES: usize = 8;
+
+const CONFIG_PDA_SEED: &[u8] = b"CONFIG";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub enum InstitutionType {
@@ -39,6 +49,12 @@ pub enum ReleaseStatus {
 /// `fee_transparency_program`.
 #[derive(Serialize, Deserialize)]
 pub enum Instruction {
+    /// Create the singleton program config PDA and store the Token Program id.
+    ///
+    /// Accounts:
+    /// - Config account (uninitialized PDA for `"CONFIG"`)
+    Initialize { token_program_id: ProgramId },
+
     /// Create a new institution registry account.
     ///
     /// Accounts:
@@ -59,6 +75,16 @@ pub enum Instruction {
     /// - Registrar account (signer)
     VerifyInstitution,
 
+    /// Bind a fee-token definition and custody vault PDA to the institution.
+    ///
+    /// Accounts:
+    /// - Config account
+    /// - Institution account (mut)
+    /// - Token definition account (owned by Token Program)
+    /// - Vault account (must be the institution vault PDA; may be uninitialized)
+    /// - Admin account (signer)
+    InitializeInstitutionVault,
+
     /// Add a multi-sig approver for release requests.
     ///
     /// Accounts:
@@ -69,7 +95,7 @@ pub enum Instruction {
     /// Create a fee category under an institution. Percentages are basis points.
     ///
     /// Accounts:
-    /// - Institution account
+    /// - Institution account (mut)
     /// - Category account (uninitialized, authorized)
     /// - Admin account (signer)
     CreateFeeCategory {
@@ -78,15 +104,16 @@ pub enum Instruction {
         allocated_percentage_bps: u16,
     },
 
-    /// Record a locked fee payment and allocate to active categories.
-    /// Token movement / custody will be wired via chained token calls in a later iteration.
+    /// Lock a fee payment into the institution vault and allocate to categories.
     ///
     /// Accounts:
+    /// - Config account
     /// - Institution account (mut)
     /// - Payment account (uninitialized, authorized)
     /// - Payer account (signer)
-    /// - Category accounts referenced by the institution (mut) — count is dynamic; v1 handlers
-    ///   accept a fixed category list passed by the client.
+    /// - Payer token holding (mut, authorized)
+    /// - Institution vault token holding (mut, PDA)
+    /// - Up to 8 category accounts (mut); unused slots must be default accounts
     PayFees {
         payer_name: String,
         reference_number: String,
@@ -122,14 +149,23 @@ pub enum Instruction {
     /// - Approver account (signer)
     RejectRelease,
 
-    /// Execute an approved release once `required_approvals` is met.
+    /// Execute an approved release: debit ledgers and transfer vault → treasury holding.
     ///
     /// Accounts:
+    /// - Config account
     /// - Institution account (mut)
     /// - Category account (mut)
     /// - Release request account (mut)
-    /// - Treasury / destination account (mut)
+    /// - Institution vault token holding (mut, PDA)
+    /// - Treasury token holding (mut)
     ExecuteRelease,
+}
+
+/// Singleton config stored at the `"CONFIG"` PDA.
+#[account_type]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+pub struct ProgramConfig {
+    pub token_program_id: ProgramId,
 }
 
 #[account_type]
@@ -147,6 +183,10 @@ pub struct Institution {
     pub required_approvals: u8,
     pub approvers: Vec<AccountId>,
     pub category_ids: Vec<AccountId>,
+    /// Fee token definition once the vault is initialized.
+    pub token_definition_id: Option<AccountId>,
+    /// Custody vault PDA once initialized.
+    pub vault_id: Option<AccountId>,
 }
 
 #[account_type]
@@ -195,6 +235,52 @@ pub struct ReleaseRequest {
     pub rejectors: Vec<AccountId>,
 }
 
+#[must_use]
+pub fn compute_config_pda_seed() -> PdaSeed {
+    use risc0_zkvm::sha::{Impl, Sha256};
+    PdaSeed::new(
+        Impl::hash_bytes(CONFIG_PDA_SEED)
+            .as_bytes()
+            .try_into()
+            .expect("Hash output must be exactly 32 bytes long"),
+    )
+}
+
+#[must_use]
+pub fn compute_config_pda(program_id: ProgramId) -> AccountId {
+    AccountId::for_public_pda(&program_id, &compute_config_pda_seed())
+}
+
+#[must_use]
+pub fn compute_vault_pda_seed(
+    institution_id: AccountId,
+    token_definition_id: AccountId,
+) -> PdaSeed {
+    use risc0_zkvm::sha::{Impl, Sha256};
+    let mut bytes = [0_u8; 64];
+    let (institution_bytes, definition_bytes) = bytes.split_at_mut(32);
+    institution_bytes.copy_from_slice(&institution_id.to_bytes());
+    definition_bytes.copy_from_slice(&token_definition_id.to_bytes());
+    PdaSeed::new(
+        Impl::hash_bytes(&bytes)
+            .as_bytes()
+            .try_into()
+            .expect("Hash output must be exactly 32 bytes long"),
+    )
+}
+
+#[must_use]
+pub fn compute_vault_pda(
+    program_id: ProgramId,
+    institution_id: AccountId,
+    token_definition_id: AccountId,
+) -> AccountId {
+    AccountId::for_public_pda(
+        &program_id,
+        &compute_vault_pda_seed(institution_id, token_definition_id),
+    )
+}
+
 macro_rules! impl_data_codec {
     ($ty:ty) => {
         impl TryFrom<&Data> for $ty {
@@ -216,6 +302,7 @@ macro_rules! impl_data_codec {
     };
 }
 
+impl_data_codec!(ProgramConfig);
 impl_data_codec!(Institution);
 impl_data_codec!(FeeCategory);
 impl_data_codec!(Payment);

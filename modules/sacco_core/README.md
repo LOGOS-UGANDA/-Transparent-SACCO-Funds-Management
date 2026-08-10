@@ -21,6 +21,8 @@ Headless Logos **core module** for Transparent SACCO.
 
 Current implementations return JSON-shaped scaffold payloads and emit `operationQueued`. They do **not** yet submit LEZ transactions.
 
+Next: wire these methods to wallet/`spel` using [`artifacts/fee_transparency-idl.json`](../../artifacts/fee_transparency-idl.json) and the custody flow in [`docs/custody.md`](../../docs/custody.md) (`Initialize` → vault → `PayFees` → multi-sig → `ExecuteRelease`).
+
 ## Build
 
 Requires Nix + [`logos-module-builder`](https://github.com/logos-co/logos-module-builder).

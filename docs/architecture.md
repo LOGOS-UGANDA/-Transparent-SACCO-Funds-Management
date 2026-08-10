@@ -8,24 +8,30 @@ Transparent SACCO is a Logos stack product: LEZ program + core module + UI modul
 
 On-chain (zone) logic for institutions, fee categories, payments, release requests, and multi-sig approvals. Prefer **public** LEZ accounts for the audit trail so payers can verify allocations without a privileged indexer.
 
-Target instruction set (port from the Solidity prototype):
+**Custody:** institution vault PDA + category ledger. Full design: [custody.md](./custody.md).
 
-| Instruction / capability | Purpose |
-|--------------------------|---------|
-| Register institution | Onboard a university, SACCO, or cooperative |
-| Create fee category | Define categories with percentage allocations |
-| Pay fees | Lock payment and allocate to categories |
-| Request release | Propose a release with purpose and evidence |
-| Approve release | Multi-sig approval toward release threshold |
-| Verify payment | Public read of payment allocation and status |
+| Instruction | Purpose |
+|-------------|---------|
+| `Initialize` | Create config PDA; store Token Program id |
+| `RegisterInstitution` | Onboard a university, SACCO, or cooperative |
+| `VerifyInstitution` | Mark institution verified |
+| `InitializeInstitutionVault` | Bind fee token + custody vault PDA |
+| `AddApprover` | Register multi-sig approver |
+| `CreateFeeCategory` | Category with basis-point allocation |
+| `PayFees` | Ledger allocate + `Token::Transfer` into vault |
+| `RequestRelease` | Propose release with purpose/evidence |
+| `ApproveRelease` / `RejectRelease` | Multi-sig votes |
+| `ExecuteRelease` | Ledger debit + `Token::Transfer` vault → treasury |
 
-Implementation target: Rust guest for the Logos Execution Environment (LEE / RISC Zero), deployed with LEZ wallet tooling — not Solidity/EVM.
+Implementation: Rust guest for the Logos Execution Environment (LEE / RISC Zero), SPEL macros, deployed with LEZ wallet tooling — not Solidity/EVM.
+
+IDL: [idl.md](./idl.md) · [`artifacts/fee_transparency-idl.json`](../artifacts/fee_transparency-idl.json)
 
 ### Core module — `modules/sacco_core`
 
 Headless Logos module that:
 
-- Talks to the LEZ wallet / program APIs
+- Will talk to the LEZ wallet / program APIs using the IDL (scaffold APIs today)
 - Optionally stores evidence blobs via Logos Storage (CIDs referenced on-chain)
 - Exposes methods the UI calls over Logos IPC
 
@@ -45,8 +51,16 @@ Same packages, two hosts:
 1. **Standalone** — ship UI + required modules for a single-purpose client.
 2. **Basecamp** — publish `.lgx` to a release index; users install from a module repository (`logos-repo.json`).
 
-There is no central app-store gatekeeper. Discovery is repository-based.
+There is no central app-store gatekeeper. Discovery is repository-based. See [basecamp-publishing.md](./basecamp-publishing.md).
 
 ## Prototype boundary
 
 `prototype/` is a React + Hardhat + Solidity demo used for UX and research narrative. It must not be described as the Logos production stack. Production path is LEZ + modules above.
+
+## Doc map
+
+| Doc | Topic |
+|-----|--------|
+| [custody.md](./custody.md) | How fees are locked and released on LEZ |
+| [idl.md](./idl.md) | Client IDL artifact and regeneration |
+| [basecamp-publishing.md](./basecamp-publishing.md) | Shipping modules to Basecamp |

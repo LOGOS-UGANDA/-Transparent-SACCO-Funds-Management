@@ -9,3 +9,4 @@ workspace = true
 [dependencies]
 nssa_core = { workspace = true }
 fee_transparency_core = { workspace = true }
+token_core = { workspace = true }

@@ -33,4 +33,6 @@ fn register_institution_writes_initial_state() {
     assert!(!institution.is_verified);
     assert_eq!(institution.required_approvals, 2);
     assert_eq!(institution.approvers.len(), 1);
+    assert!(institution.vault_id.is_none());
+    assert!(institution.token_definition_id.is_none());
 }

@@ -63,11 +63,12 @@ Docs: [docs.logos.co](https://docs.logos.co/) · [Basecamp](https://logos.co/bas
 .
 ├── README.md
 ├── logos-repo.json              # Basecamp package-repository entry (fill in when publishing)
-├── docs/                        # Product & integration notes
+├── docs/                        # Architecture, custody, IDL, publishing
+├── artifacts/                   # fee_transparency IDL
 ├── programs/
-│   └── fee_transparency/        # LEZ program (scaffold)
+│   └── fee_transparency/        # LEZ program (custody-enabled)
 ├── modules/
-│   ├── sacco_core/              # Headless core module (scaffold)
+│   ├── sacco_core/              # Headless core module (scaffold APIs)
 │   └── sacco_ui/                # QML UI module (scaffold)
 └── prototype/                   # Earlier React + Hardhat demo (not Logos-native)
 ```
@@ -79,10 +80,20 @@ Docs: [docs.logos.co](https://docs.logos.co/) · [Basecamp](https://logos.co/bas
 | Area | Status |
 |------|--------|
 | Product research & UX flows | Captured in `prototype/` |
-| LEZ fee-transparency program | Scaffold: types, handlers, guest entrypoints (`programs/fee_transparency`) |
-| Core + UI Logos modules | Scaffold: `sacco_core` + `sacco_ui` (Nix / QML) |
+| LEZ fee-transparency program | Types, handlers, guest entrypoints, **institution-vault custody** |
+| IDL | [`artifacts/fee_transparency-idl.json`](./artifacts/fee_transparency-idl.json) (see [docs/idl.md](./docs/idl.md)) |
+| Core + UI Logos modules | Scaffold: `sacco_core` + `sacco_ui` (Nix / QML); LEZ wiring next |
 | Standalone + Basecamp packaging | Planned (`.lgx` + filled `logos-repo.json`) |
 | Public module repository | Placeholder `logos-repo.json` |
+
+### Docs
+
+| Doc | Topic |
+|-----|--------|
+| [docs/architecture.md](./docs/architecture.md) | Stack overview |
+| [docs/custody.md](./docs/custody.md) | How fees are locked / released |
+| [docs/idl.md](./docs/idl.md) | Client IDL |
+| [docs/basecamp-publishing.md](./docs/basecamp-publishing.md) | Basecamp distribution |
 
 ---
 

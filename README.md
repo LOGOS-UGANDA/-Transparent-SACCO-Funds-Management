@@ -94,6 +94,7 @@ Docs: [docs.logos.co](https://docs.logos.co/) · [Basecamp](https://logos.co/bas
 | [docs/custody.md](./docs/custody.md) | How fees are locked / released |
 | [docs/idl.md](./docs/idl.md) | Client IDL |
 | [docs/basecamp-publishing.md](./docs/basecamp-publishing.md) | Basecamp distribution |
+| [docs/testing.md](./docs/testing.md) | How to test (prototype, CLI, Basecamp) |
 
 ---
 

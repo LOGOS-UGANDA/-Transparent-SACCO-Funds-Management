@@ -1,46 +1,68 @@
-# SACCO pivot: roadmap PR + phase issues — design
+# Design — SACCO Pivot: Roadmap Pull Request and Phase Issues
 
-**Date:** 2026-10-25 · **Size:** small change · **Approach:** A (docs-only PR + one issue per phase)
+| | |
+|---|---|
+| **Date** | 2026-10-25 |
+| **Status** | Approved, with amendments of 2026-10-25 recorded under *Decisions* |
+| **Classification** | Small change (documentation and project management only) |
+| **Selected approach** | A — documentation-only pull request, one issue per phase |
 
-## Intent and why
+## 1. Background and intent
 
-The pivot from university fee transparency to a SACCO ledger is decided (Logos Circle Kampala roadmap, currently Phase 0). The team needs the plan living in the repo, not on a Grok page, and needs assignable work items. This change lands the roadmap as docs on a branch/PR and opens one issue per phase.
+Logos Circle Kampala has decided to pivot this repository's product from university fee transparency to a SACCO ledger: deposits, loans, and expenses recorded and approved on chain, with individual member balances kept private and institutional totals public. The pivot roadmap currently exists only as an externally generated web page; it carries no authority inside the repository and offers the team no way to claim or track work.
 
-The plan is worded as **12 steps, not a 12-week calendar**: same order, same groupings, no time commitment. The 8 phases (0–7) map onto steps (Phase 0 = Step 1 … Phase 7 = Steps 10–12).
+This change establishes the pivot inside the repository. It lands the roadmap as reviewed documentation and opens structured, labeled issues so that contributors can take ownership of specific phases.
 
-## Goals
+The roadmap is expressed as **twelve steps across eight phases**. Sequencing — not scheduling — carries the plan: the documents deliberately contain no durations, calendar dates, or other time commitments.
 
-- Branch `sacco-pivot-plan` off `origin/main` with a docs-only PR:
-  - `docs/roadmap-sacco-pivot.md` — the roadmap adapted for the repo: problem, architecture, the 8 phases (0–7) with tasks and exit criteria, data model, metrics, workstreams, open questions — all worded as 12 steps with no week or date framing.
-  - README: short "Pivot to SACCO ledger" note pointing at the roadmap doc.
-- Enable Issues on the repo (currently disabled).
-- Create 8 issues — one per phase — each with its task checklist, "Done when" exit criterion, and a workstream label.
-- New labels: `lez`, `backend`, `frontend`, `community` (only GitHub defaults exist today).
+## 2. Objectives
 
-## Non-goals
+1. Publish the complete pivot roadmap at `docs/roadmap-sacco-pivot.md`: problem statement, architecture, the eight phases with tasks and exit criteria, data model, metrics, workstreams, and open questions.
+2. Announce the pivot in the README with a link to the roadmap, keeping the earlier university-fee material as historical reference.
+3. Enable the GitHub issue tracker and establish four workstream labels: `lez`, `backend`, `frontend`, `community`.
+4. Open issues for the first three phases, assigned to the repository lead, with the remaining phases deferred until requested.
 
-- No code changes in this PR. The `fee_transparency` → `sacco_ledger` rename and everything downstream stays team work.
-- No milestones, no project board, no per-task issues.
+## 3. Scope
 
-## Anti-goals
+**In scope.** New roadmap document; README pivot notice; issue-tracker enablement; four workstream labels; issues for Phases 0–2.
 
-- Front-running Phase 1 work inside the plan PR.
-- Issue spam: ~40 roadmap tasks as ~40 separate issues.
+**Out of scope.** Any change to program code, modules, artifacts, or tooling. In particular, the rename of `fee_transparency` to `sacco_ledger` is Phase 1 work for the team, not part of this change.
 
-## Constraints
+**Explicitly avoided.** Front-loading Phase 1 implementation into the documentation pull request; fragmenting the roadmap into per-task issues.
 
-- `gh` CLI: run with `GH_TOKEN` unset; the stored `YodHeVauHe` credentials are valid.
-- Enabling Issues needs repo admin. Try via API first; if forbidden, YodHeVauHe flips Settings → General → Features.
+## 4. Constraints
 
-## Decisions (mine unless corrected)
+- Schedule language is prohibited in all deliverables: no durations or dates. Existing phrasing is reworded during adaptation (for example, "Weeks 2–4" becomes "Steps 2–4"; "12 weeks" becomes "12 steps").
+- All GitHub CLI operations run against the stored credentials of `YodHeVauHe`, with conflicting `GH_TOKEN` environment variables unset.
+- Enabling the issue tracker requires repository administrator rights, which the stored token does not possess; the setting must be switched on by an administrator.
 
-- Issues are created **unassigned** — no phase→person mapping was given. Assignment happens in the team.
-- Issue titles: `Phase N: <name> (Steps X–Y)`, e.g. `Phase 1: Domain model and LEZ program (Steps 2–4)`.
-- Week-based scheduling is replaced by step ordering everywhere: "Weeks 2–4" → "Steps 2–4"; "12 weeks, from 26 Oct 2026" → "12 steps". No dates appear in the roadmap or issues.
-- Roadmap task statuses as of 24 Oct 2026 are preserved as ticked checkboxes in issue bodies.
-- Design doc rides on the same branch.
+## 5. Approaches considered
 
-## Left to the builder
+| Approach | Description | Assessment |
+|---|---|---|
+| **A — documentation-only pull request plus per-phase issues** | Roadmap and README on a dedicated branch; one issue per phase with checklists, exit criteria, and workstream labels. | **Selected.** Minimal, reviewable diff; every unit of implementation work reaches the team as an assignable issue. |
+| B — plan and program rename in one pull request | Approach A plus renaming `programs/fee_transparency` to `programs/sacco_ledger` and updating references. | Rejected. Anticipates Phase 1, inflates the diff, and removes work intended for the team. |
+| C — specification set plus per-workstream issues | Fuller design and planning documents; five issues organized by workstream rather than phase. | Rejected. Phases span workstreams, so workstream-level issues blur ownership and sequencing. |
 
-- Exact wording of the roadmap doc and issue bodies (source: the Grok page content).
-- PR title/description and label colors.
+## 6. Decisions
+
+Decisions below marked *amendment* were made by the repository lead after initial approval and supersede the corresponding earlier choices.
+
+1. Issue titles follow `Phase N: <name> (Steps X–Y)`, singular for single-step phases.
+2. Roadmap statuses are preserved as checkbox states, with provenance notes stripped of dates.
+3. The design and plan documents travel on the same branch as the roadmap.
+4. *Amendment:* Issues for **Phases 0–2 are assigned to `YodHeVauHe`** and created first; issues for **Phases 3–7 are deferred** until the lead requests them. The original design created all eight unassigned.
+
+## 7. Deliverables
+
+| Deliverable | Location |
+|---|---|
+| Pivot roadmap | `docs/roadmap-sacco-pivot.md` |
+| README pivot notice | `README.md` |
+| Pull request | `sacco-pivot-plan` → `main`, titled "SACCO pivot: roadmap and 12-step plan" |
+| Workstream labels | `lez` `1D76DB` · `backend` `0E8A16` · `frontend` `5319E7` · `community` `D93F0B` |
+| Phase issues | Phases 0–2 assigned to `YodHeVauHe`; Phases 3–7 deferred |
+
+## 8. Reference
+
+- Implementation plan: `docs/superpowers/plans/2026-10-25-sacco-pivot-plan-and-issues.md`

@@ -10,9 +10,14 @@ pub use sacco_ledger_core as core;
 
 pub mod add_approver;
 pub mod add_member;
-pub mod confirm_deposit;
-pub mod record_deposit;
 pub mod add_supervisor;
+pub mod apply_loan;
+pub mod approve_loan;
+pub mod confirm_deposit;
+pub mod disburse_loan;
+pub mod record_deposit;
+pub mod record_repayment;
+pub mod reject_loan;
 pub mod custody;
 pub mod initialize;
 pub mod register_sacco;

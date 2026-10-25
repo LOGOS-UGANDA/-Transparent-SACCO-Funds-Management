@@ -56,10 +56,10 @@ Ticks show work already done.
 |---|---|---|---|
 | 2–4 | Logos Blockchain integration | LEZ (Rust, RISC Zero) | `sacco_ledger` passes tests for every instruction. |
 
-- [x] Vault, multi-sig release flow and approver checks exist (`fee_transparency`)
+- [x] Vault, multi-sig release flow and approver checks exist (`sacco_ledger`)
 - [x] Program IDL exported (`artifacts/`)
 - [ ] Bump `lee_core` to v0.3, fix breakages and deploy a hello-world program
-- [ ] Rename `fee_transparency` to `sacco_ledger` and drop university fee concepts
+- [ ] Rename `sacco_ledger` to `sacco_ledger` and drop university fee concepts
 - [ ] Add SACCO, Member, Committee and Supervisory Committee accounts (approvers separate from supervisors)
 - [ ] Make approver thresholds and role composition configurable per SACCO
 - [ ] Add `RecordDeposit` with treasurer record and member confirmation
@@ -209,7 +209,7 @@ From the Logos Circles guide; about 80 percent ticked means the issue is winnabl
 ## How to start building
 
 1. Install Basecamp, `logosctl` and Nix with flakes.
-2. Use `logos-scaffold` to start a local sequencer and deploy `programs/fee_transparency`.
+2. Use `logos-scaffold` to start a local sequencer and deploy `programs/sacco_ledger`.
 3. `nix flake init -t github:logos-co/logos-module-builder/0.3.2`, then `nix build`.
 4. `nix build .#lgx-portable`, then `logosctl package install`.
 

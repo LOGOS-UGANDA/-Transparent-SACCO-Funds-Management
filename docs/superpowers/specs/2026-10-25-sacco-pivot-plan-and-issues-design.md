@@ -52,6 +52,10 @@ Decisions below marked *amendment* were made by the repository lead after initia
 2. Roadmap statuses are preserved as checkbox states, with provenance notes stripped of dates.
 3. The design and plan documents travel on the same branch as the roadmap.
 4. *Amendment:* Issues for **Phases 0–2 are assigned to `YodHeVauHe`** and created first; issues for **Phases 3–7 are deferred** until the lead requests them. The original design created all eight unassigned.
+5. *Amendment (PR review, 2026-10-25):* oversight is separated from approval — the Phase 1 data model gains a **Supervisory Committee** account alongside the Committee, and approver thresholds and role composition become **per-SACCO configuration**.
+6. *Amendment (PR review, 2026-10-25):* the custody question is settled toward **attestation**: the program is the record, not a custodian. Value stays off chain in mobile money and bank accounts; the vault-custody code remains in the repository but dormant. `ProposeExpense` / `ExecuteExpense` are documented as recording approval and release of off-chain funds.
+7. *Amendment (PR review, 2026-10-25):* the `lee_core` v0.3 bump and a hello-world deploy move to the **front of Phase 1**, so version incompatibility surfaces before domain modelling; Phase 2 retains the tooling switch and the sequencer/testnet deploys.
+8. *Amendment (PR review, 2026-10-25):* investments are stated **out of scope for v1**; five reviewer questions are adopted as roadmap open questions (deposit types at Phase 1 kickoff; member-exit and beneficiary recovery at Phase 4; pilot reachability; URSB record-keeping obligations; auditor and Supervisory Committee visibility into private balances).
 
 ## 7. Deliverables
 

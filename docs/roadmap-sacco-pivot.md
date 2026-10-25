@@ -12,8 +12,11 @@ The start-to-finish map for Logos Circle Kampala's winnable issue: what we build
 | Repo | `https://github.com/LOGOS-UGANDA/-Transparent-SACCO-Funds-Management` |
 | Plan | 12 steps |
 | Status | Phase 0, scoping |
+| Scope (v1) | Deposits, loans and expenses. Investments (Wazalendo-style investment arms) are out of scope for v1. |
 
 > **What winning means:** A real SACCO using the tool, members checking it, and measured results reported publicly. Strong code alone does not win a Circles issue.
+
+> **Settled in review:** oversight is split from approval — a **Supervisory Committee** role sits beside the Committee. And the program is a **record, not a custodian**: value stays in mobile money and bank accounts, and the chain attests to what happened. The existing vault-custody code stays dormant.
 
 ## Architecture
 
@@ -28,7 +31,7 @@ flowchart LR
     CORE -->|"notify"| MSG["Logos Messaging (Alerts and committee chat)"]
 ```
 
-Real money still moves through mobile money or cash. The chain is the shared, tamper-evident record of it, with approvals enforced by the program.
+Real money still moves through mobile money or cash. The chain is the shared, tamper-evident record of it, with approvals enforced by the program. The program holds no value — it attests to funds held off chain.
 
 ## Phases and tasks
 
@@ -55,8 +58,10 @@ Ticks show work already done.
 
 - [x] Vault, multi-sig release flow and approver checks exist (`fee_transparency`)
 - [x] Program IDL exported (`artifacts/`)
+- [ ] Bump `lee_core` to v0.3, fix breakages and deploy a hello-world program
 - [ ] Rename `fee_transparency` to `sacco_ledger` and drop university fee concepts
-- [ ] Add SACCO, Member and Committee accounts
+- [ ] Add SACCO, Member, Committee and Supervisory Committee accounts (approvers separate from supervisors)
+- [ ] Make approver thresholds and role composition configurable per SACCO
 - [ ] Add `RecordDeposit` with treasurer record and member confirmation
 - [ ] Add loans: `ApplyLoan`, `ApproveLoan`, `DisburseLoan`, `RecordRepayment`
 - [ ] Adapt release flow into `ProposeExpense`, approve, `ExecuteExpense`
@@ -69,7 +74,6 @@ Ticks show work already done.
 |---|---|---|---|
 | 4 | Logos Blockchain integration | Testnet v0.3, `logos-scaffold` | Program deployed on local sequencer and testnet with a working call. |
 
-- [ ] Bump `lee_core` from v0.2.0 to the v0.3 release and fix breakages
 - [ ] Switch docs and scripts from `logoscore`/`lgpm` to `logosctl`
 - [ ] Deploy to local sequencer with `logos-scaffold`
 - [ ] Deploy to testnet and record the program ID in the repo
@@ -160,12 +164,13 @@ The earlier report names five workstreams; the fifth is shown here as Community 
 | Account or instruction | Kind | Visibility | Notes |
 |---|---|---|---|
 | SACCO | Account | Public | Name, registration, totals |
-| Committee | Account | Public | Approvers and threshold |
+| Committee | Account | Public | Approvers; threshold configured per SACCO |
+| Supervisory Committee | Account | Public | Oversight of approvers; elected separately |
 | Member | Account | Private | Savings, shares, loan balance |
 | RecordDeposit | Instruction | Member private, total public | Treasurer records, member confirms |
 | ApplyLoan / ApproveLoan | Instruction | Private with public totals | Committee multi-sig |
 | DisburseLoan / RecordRepayment | Instruction | Private with public totals | Evidence CID attached |
-| ProposeExpense / ExecuteExpense | Instruction | Public | Reuses current release flow |
+| ProposeExpense / ExecuteExpense | Instruction | Public | Records approval and release of funds held off chain |
 | PostPeriodSummary | Instruction | Public | Period totals for all members |
 
 ## Metrics
@@ -195,7 +200,11 @@ From the Logos Circles guide; about 80 percent ticked means the issue is winnabl
 2. Does the v0.2.0 LEZ code compile against testnet v0.3?
 3. Which is the main repo: upstream `makmot256`, the LOGOS-UGANDA fork, or `kaksv/Transparent-Sacco-on-logos`?
 4. What came out of the recent SACCO Build Sprint at Makerere?
-5. Do we hold tokens on chain at all, or only attest mobile money and cash records?
+5. Should `RecordDeposit` distinguish share capital from savings? *(Phase 1 kickoff)*
+6. What is the recovery path when a member exits or dies — how are private balances returned to beneficiaries? *(Phase 4 privacy)*
+7. Which SACCO is realistically reachable for a pilot — institutional ones restrict membership, so is a community or trader SACCO more accessible?
+8. What record-keeping and reporting obligations follow from SACCO registration with URSB?
+9. How can public totals be checked against private balances, and what can an auditor or Supervisory Committee see? *(depends on what LEZ private accounts support)*
 
 ## How to start building
 

@@ -148,6 +148,172 @@ pub struct PeriodSummary {
     pub expenses: u128,
 }
 
+
+/// SACCO ledger instructions. Account lists are documented per variant; handlers live
+/// in `sacco_ledger_program`. The attestation model: value never moves on chain —
+/// instructions record and approve off-chain money events.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Instruction {
+    /// Create the singleton SACCO registry config.
+    ///
+    /// Accounts:
+    /// - Config account (uninitialized PDA)
+    Initialize {},
+
+    /// Register a SACCO: public name, registration number and treasury contact.
+    ///
+    /// Accounts:
+    /// - Sacco account (uninitialized, authorized)
+    /// - Admin account (signer)
+    RegisterSacco {
+        name: String,
+        registration_number: String,
+        treasury: AccountId,
+    },
+
+    /// Mark a SACCO verified (protocol / registrar authority).
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Registrar account (signer)
+    VerifySacco {},
+
+    /// Add a multi-sig approver (treasurer or committee member).
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Admin account (signer)
+    AddApprover { approver: AccountId },
+
+    /// Add a Supervisory Committee member (oversight, distinct from approvers).
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Admin account (signer)
+    AddSupervisor { supervisor: AccountId },
+
+    /// Register a member identity on the SACCO.
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Member account (uninitialized, authorized)
+    /// - Admin account (signer)
+    AddMember { identity: AccountId },
+
+    /// Record an off-chain deposit for a member (treasurer attests, member confirms).
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Member account (mut)
+    /// - Deposit account (uninitialized, authorized)
+    /// - Approver account (signer)
+    RecordDeposit {
+        member: AccountId,
+        amount: u128,
+        deposit_type: DepositType,
+        reference: String,
+    },
+
+    /// Member confirmation of a recorded deposit.
+    ///
+    /// Accounts:
+    /// - Sacco account
+    /// - Deposit account (mut)
+    /// - Member account (signer)
+    ConfirmDeposit {},
+
+    /// Member applies for a loan.
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Member account (mut)
+    /// - Loan account (uninitialized, authorized)
+    /// - Member identity account (signer)
+    ApplyLoan { amount: u128, purpose: String },
+
+    /// Committee multi-sig approval of a loan.
+    ///
+    /// Accounts:
+    /// - Sacco account
+    /// - Loan account (mut)
+    /// - Approver account (signer)
+    ApproveLoan {},
+
+    /// Committee rejection of a loan.
+    ///
+    /// Accounts:
+    /// - Sacco account
+    /// - Loan account (mut)
+    /// - Approver account (signer)
+    RejectLoan {},
+
+    /// Record loan disbursement (off-chain transfer) with storage evidence.
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Member account (mut)
+    /// - Loan account (mut)
+    /// - Approver account (signer)
+    DisburseLoan { evidence_cid: String },
+
+    /// Record a loan repayment (off-chain transfer) against a disbursed loan.
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Member account (mut)
+    /// - Loan account (mut)
+    /// - Approver account (signer)
+    RecordRepayment {
+        loan: AccountId,
+        amount: u128,
+        reference: String,
+    },
+
+    /// Propose an expense against SACCO funds (treasurer).
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Expense account (uninitialized, authorized)
+    /// - Approver account (signer)
+    ProposeExpense {
+        amount: u128,
+        purpose: String,
+        evidence_cid: String,
+    },
+
+    /// Committee multi-sig approval of a proposed expense.
+    ///
+    /// Accounts:
+    /// - Sacco account
+    /// - Expense account (mut)
+    /// - Approver account (signer)
+    ApproveExpense {},
+
+    /// Committee rejection of a proposed expense.
+    ///
+    /// Accounts:
+    /// - Sacco account
+    /// - Expense account (mut)
+    /// - Approver account (signer)
+    RejectExpense {},
+
+    /// Record execution of an approved expense: the off-chain payment reference.
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Expense account (mut)
+    /// - Approver account (signer)
+    ExecuteExpense { executed_evidence: String },
+
+    /// Post a period summary snapshot of SACCO totals (public for members).
+    ///
+    /// Accounts:
+    /// - Sacco account
+    /// - Period summary account (uninitialized, authorized)
+    /// - Approver account (signer)
+    PostPeriodSummary { label: String },
+}
+
 macro_rules! impl_data_codec {
     ($ty:ty) => {
         impl TryFrom<&nssa_core::account::Data> for $ty {

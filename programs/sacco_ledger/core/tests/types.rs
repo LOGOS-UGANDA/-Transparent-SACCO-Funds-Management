@@ -15,6 +15,7 @@ fn sacco_fixture() -> Sacco {
         name: "Kampala Traders SACCO".into(),
         registration_number: "UG-SACCO-001".into(),
         admin: aid(1),
+        treasury: aid(9),
         is_verified: false,
         is_active: true,
         total_deposits_savings: 1_000_000,

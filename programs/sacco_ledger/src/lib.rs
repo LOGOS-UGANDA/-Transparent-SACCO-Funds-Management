@@ -1,22 +1,26 @@
-//! Transparent SACCO fee-transparency program logic.
+//! Transparent SACCO ledger program logic — the attestation model.
 //!
-//! Pure state-transition helpers — no I/O. Guest entrypoints live under `methods/guest`.
-//! Custody design: repository `docs/custody.md`.
+//! Pure state-transition handlers over `AccountStateDiff`s — no I/O. Guest entrypoints
+//! live under `methods/guest`. Value never moves on chain: deposits, loans and expenses
+//! are recorded and approved; the chain is the tamper-evident record.
+//!
+//! The earlier custody handlers live (dormant) under [`custody`].
 
 pub use sacco_ledger_core as core;
-pub use sacco_ledger_core::custody;
 
 pub mod add_approver;
-pub mod approve_release;
-pub mod create_fee_category;
-pub mod execute_release;
+pub mod add_member;
+pub mod add_supervisor;
+pub mod custody;
 pub mod initialize;
-pub mod initialize_institution_vault;
-pub mod pay_fees;
-pub mod register_institution;
-pub mod reject_release;
-pub mod request_release;
-pub mod verify_institution;
+pub mod register_sacco;
+pub mod verify_sacco;
 
-#[cfg(test)]
-mod tests;
+use core::Sacco;
+use nssa_core::account::AccountId;
+
+/// True when `id` is one of the SACCO's multi-sig approvers.
+#[must_use]
+pub fn is_approver(sacco: &Sacco, id: &AccountId) -> bool {
+    sacco.approvers.contains(id)
+}

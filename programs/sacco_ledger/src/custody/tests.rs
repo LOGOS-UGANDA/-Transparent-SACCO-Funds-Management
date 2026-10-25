@@ -1,4 +1,4 @@
-use crate::register_institution::register_institution;
+use crate::custody::register_institution::register_institution;
 use sacco_ledger_core::custody::{Institution, InstitutionType};
 use nssa_core::account::{Account, AccountId, AccountWithMetadata};
 

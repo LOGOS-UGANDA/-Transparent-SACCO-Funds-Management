@@ -1,13 +1,12 @@
-use sacco_ledger_core::custody::{compute_config_pda, ProgramConfig};
+use sacco_ledger_core::{compute_config_pda, ProgramConfig};
 use nssa_core::{
     account::{Account, AccountId, AccountWithMetadata, BalanceDiff},
     program::AccountStateDiff,
 };
 
-/// Create the singleton config PDA and record the Token Program id for chained custody calls.
+/// Create the singleton config PDA for the SACCO registry.
 pub fn initialize(
     mut config_account: AccountWithMetadata,
-    token_program_id: AccountId,
     program_account_id: AccountId,
 ) -> Vec<AccountStateDiff> {
     assert_eq!(
@@ -21,7 +20,7 @@ pub fn initialize(
     );
 
     let pre = config_account.clone();
-    let config = ProgramConfig { token_program_id };
+    let config = ProgramConfig { version: 1 };
     config_account.account.data = (&config).into();
     let post_data = config_account.account.data;
 

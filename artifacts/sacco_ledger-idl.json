@@ -1,269 +1,534 @@
 {
   "version": "0.1.0",
   "name": "sacco_ledger",
+  "description": "Transparent SACCO attestation ledger: deposits, loans and expenses recorded and approved on chain; value stays off chain.",
   "instructions": [
     {
       "name": "initialize",
       "accounts": [
-        { "name": "config", "writable": true, "signer": false, "init": false }
-      ],
-      "args": [
-        { "name": "token_program_id", "type": "program_id" }
-      ]
-    },
-    {
-      "name": "register_institution",
-      "accounts": [
-        { "name": "institution", "writable": true, "signer": false, "init": false },
-        { "name": "admin", "writable": false, "signer": true, "init": false }
-      ],
-      "args": [
-        { "name": "name", "type": "string" },
-        { "name": "registration_number", "type": "string" },
-        { "name": "institution_type", "type": { "defined": "InstitutionType" } },
-        { "name": "treasury", "type": "account_id" },
-        { "name": "required_approvals", "type": "u8" }
-      ]
-    },
-    {
-      "name": "verify_institution",
-      "accounts": [
-        { "name": "institution", "writable": true, "signer": false, "init": false },
-        { "name": "registrar", "writable": false, "signer": true, "init": false }
+        {
+          "name": "config",
+          "writable": true,
+          "signer": false,
+          "init": true
+        }
       ],
       "args": []
     },
     {
-      "name": "initialize_institution_vault",
+      "name": "register_sacco",
       "accounts": [
-        { "name": "config", "writable": false, "signer": false, "init": false },
-        { "name": "institution", "writable": true, "signer": false, "init": false },
-        { "name": "token_definition", "writable": false, "signer": false, "init": false },
-        { "name": "vault", "writable": true, "signer": false, "init": false },
-        { "name": "admin", "writable": false, "signer": true, "init": false }
+        {
+          "name": "sacco",
+          "writable": true,
+          "signer": false,
+          "init": true
+        },
+        {
+          "name": "admin",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "registration_number",
+          "type": "string"
+        },
+        {
+          "name": "treasury",
+          "type": "account_id"
+        }
+      ]
+    },
+    {
+      "name": "verify_sacco",
+      "accounts": [
+        {
+          "name": "sacco",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "registrar",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
       ],
       "args": []
     },
     {
       "name": "add_approver",
       "accounts": [
-        { "name": "institution", "writable": true, "signer": false, "init": false },
-        { "name": "admin", "writable": false, "signer": true, "init": false }
+        {
+          "name": "sacco",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "admin",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
       ],
       "args": [
-        { "name": "approver", "type": "account_id" }
+        {
+          "name": "approver",
+          "type": "account_id"
+        }
       ]
     },
     {
-      "name": "create_fee_category",
+      "name": "add_supervisor",
       "accounts": [
-        { "name": "institution", "writable": true, "signer": false, "init": false },
-        { "name": "category", "writable": true, "signer": false, "init": false },
-        { "name": "admin", "writable": false, "signer": true, "init": false }
+        {
+          "name": "sacco",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "admin",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
       ],
       "args": [
-        { "name": "name", "type": "string" },
-        { "name": "description", "type": "string" },
-        { "name": "allocated_percentage_bps", "type": "u16" }
+        {
+          "name": "supervisor",
+          "type": "account_id"
+        }
       ]
     },
     {
-      "name": "pay_fees",
+      "name": "add_member",
       "accounts": [
-        { "name": "config", "writable": false, "signer": false, "init": false },
-        { "name": "institution", "writable": true, "signer": false, "init": false },
-        { "name": "payment", "writable": true, "signer": false, "init": false },
-        { "name": "payer", "writable": false, "signer": true, "init": false },
-        { "name": "payer_holding", "writable": true, "signer": false, "init": false },
-        { "name": "vault", "writable": true, "signer": false, "init": false },
-        { "name": "category_0", "writable": true, "signer": false, "init": false },
-        { "name": "category_1", "writable": true, "signer": false, "init": false },
-        { "name": "category_2", "writable": true, "signer": false, "init": false },
-        { "name": "category_3", "writable": true, "signer": false, "init": false },
-        { "name": "category_4", "writable": true, "signer": false, "init": false },
-        { "name": "category_5", "writable": true, "signer": false, "init": false },
-        { "name": "category_6", "writable": true, "signer": false, "init": false },
-        { "name": "category_7", "writable": true, "signer": false, "init": false }
+        {
+          "name": "sacco",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "signer": false,
+          "init": true
+        },
+        {
+          "name": "admin",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
       ],
       "args": [
-        { "name": "payer_name", "type": "string" },
-        { "name": "reference_number", "type": "string" },
-        { "name": "amount", "type": "u128" }
+        {
+          "name": "identity",
+          "type": "account_id"
+        }
       ]
     },
     {
-      "name": "request_release",
+      "name": "record_deposit",
       "accounts": [
-        { "name": "institution", "writable": false, "signer": false, "init": false },
-        { "name": "category", "writable": false, "signer": false, "init": false },
-        { "name": "release", "writable": true, "signer": false, "init": false },
-        { "name": "admin", "writable": false, "signer": true, "init": false }
+        {
+          "name": "sacco",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "deposit",
+          "writable": true,
+          "signer": false,
+          "init": true
+        },
+        {
+          "name": "recorder",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
       ],
       "args": [
-        { "name": "amount", "type": "u128" },
-        { "name": "purpose", "type": "string" },
-        { "name": "evidence_hash", "type": "string" }
+        {
+          "name": "member_id",
+          "type": "account_id"
+        },
+        {
+          "name": "amount",
+          "type": "u128"
+        },
+        {
+          "name": "deposit_type",
+          "type": {
+            "enum": [
+              "savings",
+              "share_capital"
+            ]
+          }
+        },
+        {
+          "name": "reference",
+          "type": "string"
+        }
       ]
     },
     {
-      "name": "approve_release",
+      "name": "confirm_deposit",
       "accounts": [
-        { "name": "institution", "writable": false, "signer": false, "init": false },
-        { "name": "release", "writable": true, "signer": false, "init": false },
-        { "name": "approver", "writable": false, "signer": true, "init": false }
+        {
+          "name": "deposit",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "member",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
       ],
       "args": []
     },
     {
-      "name": "reject_release",
+      "name": "apply_loan",
       "accounts": [
-        { "name": "institution", "writable": false, "signer": false, "init": false },
-        { "name": "release", "writable": true, "signer": false, "init": false },
-        { "name": "approver", "writable": false, "signer": true, "init": false }
+        {
+          "name": "sacco",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "loan",
+          "writable": true,
+          "signer": false,
+          "init": true
+        },
+        {
+          "name": "member_signer",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u128"
+        },
+        {
+          "name": "purpose",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "approve_loan",
+      "accounts": [
+        {
+          "name": "sacco",
+          "writable": false,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "loan",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "approver",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
       ],
       "args": []
     },
     {
-      "name": "execute_release",
+      "name": "reject_loan",
       "accounts": [
-        { "name": "config", "writable": false, "signer": false, "init": false },
-        { "name": "institution", "writable": true, "signer": false, "init": false },
-        { "name": "category", "writable": true, "signer": false, "init": false },
-        { "name": "release", "writable": true, "signer": false, "init": false },
-        { "name": "vault", "writable": true, "signer": false, "init": false },
-        { "name": "treasury_holding", "writable": true, "signer": false, "init": false }
+        {
+          "name": "sacco",
+          "writable": false,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "loan",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "approver",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
       ],
       "args": []
+    },
+    {
+      "name": "disburse_loan",
+      "accounts": [
+        {
+          "name": "sacco",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "member",
+          "writable": false,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "loan",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "approver",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
+      ],
+      "args": [
+        {
+          "name": "evidence_cid",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "record_repayment",
+      "accounts": [
+        {
+          "name": "sacco",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "member",
+          "writable": false,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "loan",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "approver",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
+      ],
+      "args": [
+        {
+          "name": "loan",
+          "type": "account_id"
+        },
+        {
+          "name": "amount",
+          "type": "u128"
+        },
+        {
+          "name": "reference",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "propose_expense",
+      "accounts": [
+        {
+          "name": "sacco",
+          "writable": false,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "expense",
+          "writable": true,
+          "signer": false,
+          "init": true
+        },
+        {
+          "name": "proposer",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u128"
+        },
+        {
+          "name": "purpose",
+          "type": "string"
+        },
+        {
+          "name": "evidence_cid",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "approve_expense",
+      "accounts": [
+        {
+          "name": "sacco",
+          "writable": false,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "expense",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "approver",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "reject_expense",
+      "accounts": [
+        {
+          "name": "sacco",
+          "writable": false,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "expense",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "approver",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "execute_expense",
+      "accounts": [
+        {
+          "name": "sacco",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "expense",
+          "writable": true,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "approver",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
+      ],
+      "args": [
+        {
+          "name": "executed_evidence",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "post_period_summary",
+      "accounts": [
+        {
+          "name": "sacco",
+          "writable": false,
+          "signer": false,
+          "init": false
+        },
+        {
+          "name": "summary",
+          "writable": true,
+          "signer": false,
+          "init": true
+        },
+        {
+          "name": "poster",
+          "writable": false,
+          "signer": true,
+          "init": false
+        }
+      ],
+      "args": [
+        {
+          "name": "label",
+          "type": "string"
+        }
+      ]
     }
   ],
-  "accounts": [
-    {
-      "name": "ProgramConfig",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          { "name": "token_program_id", "type": "program_id" }
-        ]
-      }
-    },
-    {
-      "name": "Institution",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          { "name": "name", "type": "string" },
-          { "name": "registration_number", "type": "string" },
-          { "name": "institution_type", "type": { "defined": "InstitutionType" } },
-          { "name": "admin", "type": "account_id" },
-          { "name": "treasury", "type": "account_id" },
-          { "name": "is_verified", "type": "bool" },
-          { "name": "is_active", "type": "bool" },
-          { "name": "total_fees_collected", "type": "u128" },
-          { "name": "total_fees_released", "type": "u128" },
-          { "name": "required_approvals", "type": "u8" },
-          { "name": "approvers", "type": { "vec": "account_id" } },
-          { "name": "category_ids", "type": { "vec": "account_id" } },
-          { "name": "token_definition_id", "type": { "option": "account_id" } },
-          { "name": "vault_id", "type": { "option": "account_id" } }
-        ]
-      }
-    },
-    {
-      "name": "FeeCategory",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          { "name": "institution_id", "type": "account_id" },
-          { "name": "name", "type": "string" },
-          { "name": "description", "type": "string" },
-          { "name": "allocated_percentage_bps", "type": "u16" },
-          { "name": "total_collected", "type": "u128" },
-          { "name": "total_released", "type": "u128" },
-          { "name": "is_active", "type": "bool" }
-        ]
-      }
-    },
-    {
-      "name": "Payment",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          { "name": "institution_id", "type": "account_id" },
-          { "name": "payer", "type": "account_id" },
-          { "name": "payer_name", "type": "string" },
-          { "name": "reference_number", "type": "string" },
-          { "name": "amount", "type": "u128" },
-          { "name": "status", "type": { "defined": "FeeStatus" } },
-          { "name": "allocations", "type": { "vec": { "defined": "FeeAllocation" } } }
-        ]
-      }
-    },
-    {
-      "name": "ReleaseRequest",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          { "name": "institution_id", "type": "account_id" },
-          { "name": "category_id", "type": "account_id" },
-          { "name": "amount", "type": "u128" },
-          { "name": "purpose", "type": "string" },
-          { "name": "evidence_hash", "type": "string" },
-          { "name": "requested_by", "type": "account_id" },
-          { "name": "status", "type": { "defined": "ReleaseStatus" } },
-          { "name": "approvers", "type": { "vec": "account_id" } },
-          { "name": "rejectors", "type": { "vec": "account_id" } }
-        ]
-      }
-    }
+  "account_types": [
+    "Sacco",
+    "Member",
+    "Deposit",
+    "Loan",
+    "Expense",
+    "PeriodSummary",
+    "ProgramConfig"
   ],
-  "types": [
-    {
-      "name": "InstitutionType",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          { "name": "University" },
-          { "name": "Sacco" },
-          { "name": "Cooperative" },
-          { "name": "School" }
-        ]
-      }
-    },
-    {
-      "name": "FeeStatus",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          { "name": "Locked" },
-          { "name": "PartiallyReleased" },
-          { "name": "FullyReleased" },
-          { "name": "Refunded" }
-        ]
-      }
-    },
-    {
-      "name": "ReleaseStatus",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          { "name": "Pending" },
-          { "name": "Approved" },
-          { "name": "Rejected" },
-          { "name": "Executed" }
-        ]
-      }
-    },
-    {
-      "name": "FeeAllocation",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          { "name": "category_id", "type": "account_id" },
-          { "name": "amount", "type": "u128" },
-          { "name": "released", "type": "bool" }
-        ]
-      }
-    }
-  ],
-  "notes": "Hand-authored from the SPEL guest surface. Regenerate with spel/idl-gen when the toolchain is available; see docs/idl.md."
+  "notes": [
+    "Attestation model: the program records and approves off-chain money events; it holds no value and no token transfers occur.",
+    "The dormant custody model (institution vault, PayFees, category ledger) is reference code under programs/sacco_ledger/src/custody and core::custody."
+  ]
 }

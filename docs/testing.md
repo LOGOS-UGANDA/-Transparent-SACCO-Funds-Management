@@ -148,9 +148,9 @@ Or in Basecamp UI: **Package Manager → Install LGX Package** and select the `.
 
 ### 5. Pass criteria (after LEZ wiring — future)
 
-- `Initialize` + vault + `PayFees` show vault balance change in LEZ explorer  
-- Multi-sig approve → `ExecuteRelease` moves tokens to treasury  
-- Payment verifiable via public accounts / explorer  
+- `RecordDeposit` updates member and SACCO totals (savings vs share capital split)  
+- Multi-sig approve → `ExecuteExpense` records the off-chain payment proof  
+- Deposits, loans and expenses verifiable via public accounts / explorer  
 
 ---
 

@@ -10,6 +10,8 @@ pub use sacco_ledger_core as core;
 
 pub mod add_approver;
 pub mod add_member;
+pub mod confirm_deposit;
+pub mod record_deposit;
 pub mod add_supervisor;
 pub mod custody;
 pub mod initialize;

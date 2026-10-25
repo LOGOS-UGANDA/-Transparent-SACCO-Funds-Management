@@ -51,6 +51,8 @@ pub struct Sacco {
     pub name: String,
     pub registration_number: String,
     pub admin: AccountId,
+    /// Treasury contact for recorded disbursements (attestation reference).
+    pub treasury: AccountId,
     pub is_verified: bool,
     pub is_active: bool,
     /// Total recorded savings deposits (attested, off-chain value).
@@ -314,6 +316,35 @@ pub enum Instruction {
     PostPeriodSummary { label: String },
 }
 
+/// Seed for the singleton config PDA.
+const CONFIG_PDA_SEED: &[u8] = b"CONFIG";
+
+/// Singleton config stored at the `"CONFIG"` PDA.
+#[account_type]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+pub struct ProgramConfig {
+    /// Bumped when the registry layout changes; lets clients detect version.
+    pub version: u8,
+}
+
+/// Derives the config PDA seed.
+#[must_use]
+pub fn compute_config_pda_seed() -> nssa_core::program::PdaSeed {
+    use risc0_zkvm::sha::{Impl, Sha256};
+    nssa_core::program::PdaSeed::new(
+        Impl::hash_bytes(CONFIG_PDA_SEED)
+            .as_bytes()
+            .try_into()
+            .expect("Hash output must be exactly 32 bytes long"),
+    )
+}
+
+/// Derives the config PDA for this program's account id.
+#[must_use]
+pub fn compute_config_pda(program_account_id: AccountId) -> AccountId {
+    AccountId::for_public_pda(&program_account_id, &compute_config_pda_seed())
+}
+
 macro_rules! impl_data_codec {
     ($ty:ty) => {
         impl TryFrom<&nssa_core::account::Data> for $ty {
@@ -342,3 +373,4 @@ impl_data_codec!(Deposit);
 impl_data_codec!(Loan);
 impl_data_codec!(Expense);
 impl_data_codec!(PeriodSummary);
+impl_data_codec!(ProgramConfig);

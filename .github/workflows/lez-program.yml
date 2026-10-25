@@ -1,0 +1,46 @@
+name: LEZ program
+
+on:
+  push:
+    branches: [main]
+    paths: ["programs/**", ".github/workflows/lez-program.yml"]
+  pull_request:
+    paths: ["programs/**", ".github/workflows/lez-program.yml"]
+
+jobs:
+  test:
+    name: Test and lint (RISC0 dev mode)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust 1.94
+        uses: dtolnay/rust-toolchain@1.94.0
+        with:
+          components: clippy, rustfmt
+
+      - name: Install risc0 toolchain (rzup)
+        run: |
+          curl -L https://risczero.com/install | bash
+          ~/.risc0/bin/rzup install
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            programs/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('programs/Cargo.lock') }}
+
+      - name: Build guest methods (risc0)
+        working-directory: programs
+        run: RISC0_DEV_MODE=1 cargo build -p sacco_ledger-methods --locked
+
+      - name: Test
+        working-directory: programs
+        run: RISC0_DEV_MODE=1 cargo test --workspace --locked
+
+      - name: Clippy
+        working-directory: programs
+        run: RISC0_DEV_MODE=1 RISC0_SKIP_BUILD=1 cargo clippy --workspace --all-targets -- -D warnings

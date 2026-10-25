@@ -115,7 +115,7 @@ cd prototype && npm install && npm run dev
 │   ├── architecture.md · custody.md · idl.md · testing.md · basecamp-publishing.md
 │   └── superpowers/            # design and plan records
 ├── artifacts/                  # program IDL
-├── programs/                   # LEZ program (fee_transparency → sacco_ledger, Phase 1)
+├── programs/                   # LEZ program: sacco_ledger (attestation ledger)
 ├── modules/
 │   ├── sacco_core/             # headless core module (scaffold)
 │   └── sacco_ui/               # QML UI module (scaffold)

@@ -4,28 +4,27 @@ Transparent SACCO is a Logos stack product: LEZ program + core module + UI modul
 
 ## Components
 
-### LEZ program — `programs/fee_transparency`
+### LEZ program — `programs/sacco_ledger`
 
 On-chain (zone) logic for institutions, fee categories, payments, release requests, and multi-sig approvals. Prefer **public** LEZ accounts for the audit trail so payers can verify allocations without a privileged indexer.
 
-**Custody:** institution vault PDA + category ledger. Full design: [custody.md](./custody.md).
+**Attestation model:** the program records and approves off-chain money events — it holds no value and performs no token transfers. (The earlier custody design — institution vault PDA + category ledger — is kept dormant; see [custody.md](./custody.md).)
 
 | Instruction | Purpose |
 |-------------|---------|
-| `Initialize` | Create config PDA; store Token Program id |
-| `RegisterInstitution` | Onboard a university, SACCO, or cooperative |
-| `VerifyInstitution` | Mark institution verified |
-| `InitializeInstitutionVault` | Bind fee token + custody vault PDA |
-| `AddApprover` | Register multi-sig approver |
-| `CreateFeeCategory` | Category with basis-point allocation |
-| `PayFees` | Ledger allocate + `Token::Transfer` into vault |
-| `RequestRelease` | Propose release with purpose/evidence |
-| `ApproveRelease` / `RejectRelease` | Multi-sig votes |
-| `ExecuteRelease` | Ledger debit + `Token::Transfer` vault → treasury |
+| `Initialize` | Create the config PDA |
+| `RegisterSacco` | Onboard a SACCO (admin, treasury, per-SACCO approver config) |
+| `VerifySacco` | Mark the SACCO verified |
+| `AddApprover` / `AddSupervisor` | Multi-sig approvers and the separate Supervisory Committee |
+| `AddMember` | Register a member identity |
+| `RecordDeposit` / `ConfirmDeposit` | Treasurer records (savings vs share capital), member confirms |
+| `ApplyLoan` → `ApproveLoan` / `RejectLoan` → `DisburseLoan` → `RecordRepayment` | Loan lifecycle with multi-sig and evidence |
+| `ProposeExpense` → `ApproveExpense` / `RejectExpense` → `ExecuteExpense` | Multi-sig expenses; execution records the off-chain payment proof |
+| `PostPeriodSummary` | Public snapshot of SACCO totals |
 
 Implementation: Rust guest for the Logos Execution Environment (LEE / RISC Zero), SPEL macros, deployed with LEZ wallet tooling — not Solidity/EVM.
 
-IDL: [idl.md](./idl.md) · [`artifacts/fee_transparency-idl.json`](../artifacts/fee_transparency-idl.json)
+IDL: [idl.md](./idl.md) · [`artifacts/sacco_ledger-idl.json`](../artifacts/sacco_ledger-idl.json)
 
 ### Core module — `modules/sacco_core`
 

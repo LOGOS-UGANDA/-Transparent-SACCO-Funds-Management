@@ -3,8 +3,8 @@ use fee_transparency_core::{
     ProgramConfig, ReleaseRequest, ReleaseStatus,
 };
 use nssa_core::{
-    account::AccountWithMetadata,
-    program::{AccountPostState, ChainedCall, ProgramId},
+    account::{AccountId, AccountWithMetadata, BalanceDiff},
+    program::{AccountStateDiff, ChainedCall},
 };
 use token_core::TokenHolding;
 
@@ -16,11 +16,11 @@ pub fn execute_release(
     mut release_account: AccountWithMetadata,
     vault: AccountWithMetadata,
     treasury_holding: AccountWithMetadata,
-    self_program_id: ProgramId,
-) -> (Vec<AccountPostState>, Vec<ChainedCall>) {
+    program_account_id: AccountId,
+) -> (Vec<AccountStateDiff>, Vec<ChainedCall>) {
     assert_eq!(
         config_account.account_id,
-        compute_config_pda(self_program_id),
+        compute_config_pda(program_account_id),
         "Config account must be the CONFIG PDA"
     );
     let config = ProgramConfig::try_from(&config_account.account.data)
@@ -38,7 +38,7 @@ pub fn execute_release(
     assert_eq!(
         vault.account_id,
         compute_vault_pda(
-            self_program_id,
+            program_account_id,
             institution_account.account_id,
             token_definition_id
         ),
@@ -95,15 +95,21 @@ pub fn execute_release(
         .expect("institution released overflow");
     release.status = ReleaseStatus::Executed;
 
+    let institution_pre = institution_account.clone();
     institution_account.account.data = (&institution).into();
-    category_account.account.data = (&category).into();
-    release_account.account.data = (&release).into();
+    let institution_data = institution_account.account.data;
 
-    let mut vault_authorized = vault.clone();
-    vault_authorized.is_authorized = true;
+    let category_pre = category_account.clone();
+    category_account.account.data = (&category).into();
+    let category_data = category_account.account.data;
+
+    let release_pre = release_account.clone();
+    release_account.account.data = (&release).into();
+    let release_data = release_account.account.data;
+
     let transfer_call = ChainedCall::new(
         config.token_program_id,
-        vec![vault_authorized, treasury_holding.clone()],
+        vec![vault.account_id, treasury_holding.account_id],
         &token_core::Instruction::Transfer {
             amount_to_transfer: release.amount,
         },
@@ -113,14 +119,14 @@ pub fn execute_release(
         token_definition_id,
     )]);
 
-    let posts = vec![
-        AccountPostState::new(config_account.account),
-        AccountPostState::new(institution_account.account),
-        AccountPostState::new(category_account.account),
-        AccountPostState::new(release_account.account),
-        AccountPostState::new(vault.account),
-        AccountPostState::new(treasury_holding.account),
+    let diffs = vec![
+        AccountStateDiff::unchanged(config_account),
+        AccountStateDiff::new(institution_pre, BalanceDiff::Add(0), institution_data),
+        AccountStateDiff::new(category_pre, BalanceDiff::Add(0), category_data),
+        AccountStateDiff::new(release_pre, BalanceDiff::Add(0), release_data),
+        AccountStateDiff::unchanged(vault),
+        AccountStateDiff::unchanged(treasury_holding),
     ];
 
-    (posts, vec![transfer_call])
+    (diffs, vec![transfer_call])
 }

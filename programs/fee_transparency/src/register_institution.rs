@@ -1,7 +1,7 @@
 use fee_transparency_core::{Institution, InstitutionType};
 use nssa_core::{
-    account::{Account, AccountWithMetadata},
-    program::{AccountPostState, Claim},
+    account::{Account, AccountId, AccountWithMetadata, BalanceDiff},
+    program::AccountStateDiff,
 };
 
 /// Initialize an institution account. Scaffold: validates shape and writes initial state.
@@ -11,9 +11,9 @@ pub fn register_institution(
     name: String,
     registration_number: String,
     institution_type: InstitutionType,
-    treasury: nssa_core::account::AccountId,
+    treasury: AccountId,
     required_approvals: u8,
-) -> Vec<AccountPostState> {
+) -> Vec<AccountStateDiff> {
     assert!(
         institution_account.is_authorized,
         "Institution account must be authorized"
@@ -42,13 +42,12 @@ pub fn register_institution(
         vault_id: None,
     };
 
+    let institution_pre = institution_account.clone();
     institution_account.account.data = (&institution).into();
+    let institution_data = institution_account.account.data;
 
     vec![
-        AccountPostState::new_claimed_if_default(
-            institution_account.account,
-            Claim::Authorized,
-        ),
-        AccountPostState::new_claimed_if_default(admin.account, Claim::Authorized),
+        AccountStateDiff::new(institution_pre, BalanceDiff::Add(0), institution_data),
+        AccountStateDiff::unchanged(admin),
     ]
 }

@@ -2,8 +2,8 @@ use fee_transparency_core::{
     compute_config_pda, compute_vault_pda, compute_vault_pda_seed, Institution, ProgramConfig,
 };
 use nssa_core::{
-    account::AccountWithMetadata,
-    program::{AccountPostState, ProgramId},
+    account::{AccountId, AccountWithMetadata, BalanceDiff},
+    program::AccountStateDiff,
 };
 use token_core::TokenDefinition;
 
@@ -17,12 +17,12 @@ pub fn initialize_institution_vault(
     token_definition: AccountWithMetadata,
     vault: AccountWithMetadata,
     admin: AccountWithMetadata,
-    self_program_id: ProgramId,
-) -> Vec<AccountPostState> {
+    program_account_id: AccountId,
+) -> Vec<AccountStateDiff> {
     assert!(admin.is_authorized, "Admin must authorize vault init");
     assert_eq!(
         config_account.account_id,
-        compute_config_pda(self_program_id),
+        compute_config_pda(program_account_id),
         "Config account must be the CONFIG PDA"
     );
 
@@ -47,7 +47,7 @@ pub fn initialize_institution_vault(
     );
 
     let expected_vault = compute_vault_pda(
-        self_program_id,
+        program_account_id,
         institution_account.account_id,
         token_definition.account_id,
     );
@@ -60,13 +60,16 @@ pub fn initialize_institution_vault(
 
     institution.token_definition_id = Some(token_definition.account_id);
     institution.vault_id = Some(vault.account_id);
+
+    let pre = institution_account.clone();
     institution_account.account.data = (&institution).into();
+    let post_data = institution_account.account.data;
 
     vec![
-        AccountPostState::new(config_account.account),
-        AccountPostState::new(institution_account.account),
-        AccountPostState::new(token_definition.account),
-        AccountPostState::new(vault.account),
-        AccountPostState::new(admin.account),
+        AccountStateDiff::unchanged(config_account),
+        AccountStateDiff::new(pre, BalanceDiff::Add(0), post_data),
+        AccountStateDiff::unchanged(token_definition),
+        AccountStateDiff::unchanged(vault),
+        AccountStateDiff::unchanged(admin),
     ]
 }

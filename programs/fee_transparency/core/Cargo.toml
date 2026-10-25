@@ -8,7 +8,7 @@ workspace = true
 
 [dependencies]
 nssa_core = { workspace = true }
-spel-framework-macros = { git = "https://github.com/logos-co/spel.git", tag = "v0.6.0", package = "spel-framework-macros" }
+spel-framework-macros = { git = "https://github.com/logos-co/spel.git", rev = "c6f73ce21e4805f8430f03afdbdedf0b7e479a5e", package = "spel-framework-macros" }
 borsh = { workspace = true }
 serde = { workspace = true }
 risc0-zkvm = { workspace = true, default-features = false }

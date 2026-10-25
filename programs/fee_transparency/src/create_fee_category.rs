@@ -1,7 +1,7 @@
 use fee_transparency_core::{FeeCategory, Institution, BPS_DENOMINATOR};
 use nssa_core::{
-    account::{Account, AccountId, AccountWithMetadata},
-    program::{AccountPostState, Claim},
+    account::{Account, AccountWithMetadata, BalanceDiff},
+    program::AccountStateDiff,
 };
 
 /// Create a fee category and register its id on the institution.
@@ -12,9 +12,9 @@ pub fn create_fee_category(
     name: String,
     description: String,
     allocated_percentage_bps: u16,
-    /// Currently active categories (client-supplied) used to enforce the 100% cap.
+    // Currently active categories (client-supplied) used to enforce the 100% cap.
     existing_categories: &[FeeCategory],
-) -> Vec<AccountPostState> {
+) -> Vec<AccountStateDiff> {
     assert!(admin.is_authorized, "Admin must authorize category creation");
     assert!(
         category_account.account == Account::default(),
@@ -38,15 +38,14 @@ pub fn create_fee_category(
         if category.is_active {
             total = total
                 .checked_add(category.allocated_percentage_bps)
-                .expect("percentage overflow");
+                .expect("bps addition overflow");
         }
     }
     assert!(
         total <= BPS_DENOMINATOR,
-        "Total allocation exceeds 100%"
+        "Category allocation would exceed 100%"
     );
 
-    let category_id: AccountId = category_account.account_id;
     let category = FeeCategory {
         institution_id: institution_account.account_id,
         name,
@@ -57,13 +56,20 @@ pub fn create_fee_category(
         is_active: true,
     };
 
+    let category_id = category_account.account_id;
     institution.category_ids.push(category_id);
+
+    let institution_pre = institution_account.clone();
     institution_account.account.data = (&institution).into();
+    let institution_data = institution_account.account.data;
+
+    let category_pre = category_account.clone();
     category_account.account.data = (&category).into();
+    let category_data = category_account.account.data;
 
     vec![
-        AccountPostState::new(institution_account.account),
-        AccountPostState::new_claimed_if_default(category_account.account, Claim::Authorized),
-        AccountPostState::new(admin.account),
+        AccountStateDiff::new(institution_pre, BalanceDiff::Add(0), institution_data),
+        AccountStateDiff::new(category_pre, BalanceDiff::Add(0), category_data),
+        AccountStateDiff::unchanged(admin),
     ]
 }

@@ -1,14 +1,14 @@
 use fee_transparency_core::{Institution, ReleaseRequest, ReleaseStatus};
 use nssa_core::{
-    account::AccountWithMetadata,
-    program::AccountPostState,
+    account::{AccountWithMetadata, BalanceDiff},
+    program::AccountStateDiff,
 };
 
 pub fn reject_release(
     institution_account: AccountWithMetadata,
     mut release_account: AccountWithMetadata,
     approver: AccountWithMetadata,
-) -> Vec<AccountPostState> {
+) -> Vec<AccountStateDiff> {
     assert!(approver.is_authorized, "Approver must authorize");
 
     let institution = Institution::try_from(&institution_account.account.data)
@@ -40,11 +40,14 @@ pub fn reject_release(
 
     release.rejectors.push(approver.account_id);
     release.status = ReleaseStatus::Rejected;
+
+    let pre = release_account.clone();
     release_account.account.data = (&release).into();
+    let post_data = release_account.account.data;
 
     vec![
-        AccountPostState::new(institution_account.account),
-        AccountPostState::new(release_account.account),
-        AccountPostState::new(approver.account),
+        AccountStateDiff::unchanged(institution_account),
+        AccountStateDiff::new(pre, BalanceDiff::Add(0), post_data),
+        AccountStateDiff::unchanged(approver),
     ]
 }

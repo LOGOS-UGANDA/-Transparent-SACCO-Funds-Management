@@ -8,7 +8,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use nssa_core::{
     account::{AccountId, Data},
-    program::{PdaSeed, ProgramId},
+    program::PdaSeed,
 };
 use serde::{Deserialize, Serialize};
 use spel_framework_macros::account_type;
@@ -22,6 +22,7 @@ pub const MAX_PAY_FEE_CATEGORIES: usize = 8;
 const CONFIG_PDA_SEED: &[u8] = b"CONFIG";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[borsh(use_discriminant = true)]
 pub enum InstitutionType {
     University = 0,
     Sacco = 1,
@@ -30,6 +31,7 @@ pub enum InstitutionType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[borsh(use_discriminant = true)]
 pub enum FeeStatus {
     Locked = 0,
     PartiallyReleased = 1,
@@ -38,6 +40,7 @@ pub enum FeeStatus {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[borsh(use_discriminant = true)]
 pub enum ReleaseStatus {
     Pending = 0,
     Approved = 1,
@@ -53,7 +56,7 @@ pub enum Instruction {
     ///
     /// Accounts:
     /// - Config account (uninitialized PDA for `"CONFIG"`)
-    Initialize { token_program_id: ProgramId },
+    Initialize { token_program_id: AccountId },
 
     /// Create a new institution registry account.
     ///
@@ -165,7 +168,7 @@ pub enum Instruction {
 #[account_type]
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct ProgramConfig {
-    pub token_program_id: ProgramId,
+    pub token_program_id: AccountId,
 }
 
 #[account_type]
@@ -247,8 +250,8 @@ pub fn compute_config_pda_seed() -> PdaSeed {
 }
 
 #[must_use]
-pub fn compute_config_pda(program_id: ProgramId) -> AccountId {
-    AccountId::for_public_pda(&program_id, &compute_config_pda_seed())
+pub fn compute_config_pda(program_account_id: AccountId) -> AccountId {
+    AccountId::for_public_pda(&program_account_id, &compute_config_pda_seed())
 }
 
 #[must_use]
@@ -271,12 +274,12 @@ pub fn compute_vault_pda_seed(
 
 #[must_use]
 pub fn compute_vault_pda(
-    program_id: ProgramId,
+    program_account_id: AccountId,
     institution_id: AccountId,
     token_definition_id: AccountId,
 ) -> AccountId {
     AccountId::for_public_pda(
-        &program_id,
+        &program_account_id,
         &compute_vault_pda_seed(institution_id, token_definition_id),
     )
 }

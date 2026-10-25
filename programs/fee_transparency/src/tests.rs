@@ -16,7 +16,7 @@ fn register_institution_writes_initial_state() {
     let admin = blank_account(2);
     let treasury = AccountId::new([3; 32]);
 
-    let posts = register_institution(
+    let diffs = register_institution(
         institution_account,
         admin,
         "Makerere University".into(),
@@ -26,9 +26,12 @@ fn register_institution_writes_initial_state() {
         2,
     );
 
-    assert_eq!(posts.len(), 2);
-    let institution = Institution::try_from(&posts[0].account().data)
-        .expect("institution data");
+    assert_eq!(diffs.len(), 2);
+    let post_data = diffs[0]
+        .post_data
+        .as_ref()
+        .expect("institution diff must carry new data");
+    let institution = Institution::try_from(post_data).expect("institution data");
     assert_eq!(institution.name, "Makerere University");
     assert!(!institution.is_verified);
     assert_eq!(institution.required_approvals, 2);

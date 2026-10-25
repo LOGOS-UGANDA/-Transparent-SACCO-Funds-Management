@@ -1,14 +1,14 @@
 use fee_transparency_core::Institution;
 use nssa_core::{
-    account::{AccountId, AccountWithMetadata},
-    program::AccountPostState,
+    account::{AccountId, AccountWithMetadata, BalanceDiff},
+    program::AccountStateDiff,
 };
 
 pub fn add_approver(
     mut institution_account: AccountWithMetadata,
     admin: AccountWithMetadata,
     approver: AccountId,
-) -> Vec<AccountPostState> {
+) -> Vec<AccountStateDiff> {
     assert!(admin.is_authorized, "Admin must authorize");
 
     let mut institution = Institution::try_from(&institution_account.account.data)
@@ -23,10 +23,12 @@ pub fn add_approver(
     );
 
     institution.approvers.push(approver);
+    let pre = institution_account.clone();
     institution_account.account.data = (&institution).into();
+    let post_data = institution_account.account.data;
 
     vec![
-        AccountPostState::new(institution_account.account),
-        AccountPostState::new(admin.account),
+        AccountStateDiff::new(pre, BalanceDiff::Add(0), post_data),
+        AccountStateDiff::unchanged(admin),
     ]
 }

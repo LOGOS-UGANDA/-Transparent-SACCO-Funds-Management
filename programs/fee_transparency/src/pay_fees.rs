@@ -3,14 +3,14 @@ use fee_transparency_core::{
     FeeStatus, Institution, Payment, ProgramConfig, BPS_DENOMINATOR, MAX_PAY_FEE_CATEGORIES,
 };
 use nssa_core::{
-    account::{Account, AccountWithMetadata},
-    program::{AccountPostState, ChainedCall, Claim, ProgramId},
+    account::{Account, AccountId, AccountWithMetadata, BalanceDiff},
+    program::{AccountStateDiff, ChainedCall},
 };
 use token_core::TokenHolding;
 
 /// Lock a payment into the institution vault and allocate amounts across active categories.
 ///
-/// Returns post-states plus a chained `Token::Transfer` (payer holding → vault).
+/// Returns state diffs plus a chained `Token::Transfer` (payer holding → vault).
 pub fn pay_fees(
     config_account: AccountWithMetadata,
     mut institution_account: AccountWithMetadata,
@@ -22,8 +22,8 @@ pub fn pay_fees(
     payer_name: String,
     reference_number: String,
     amount: u128,
-    self_program_id: ProgramId,
-) -> (Vec<AccountPostState>, Vec<ChainedCall>) {
+    program_account_id: AccountId,
+) -> (Vec<AccountStateDiff>, Vec<ChainedCall>) {
     assert!(payer.is_authorized, "Payer must authorize payment");
     assert!(
         payer_holding.is_authorized,
@@ -44,7 +44,7 @@ pub fn pay_fees(
     );
     assert_eq!(
         config_account.account_id,
-        compute_config_pda(self_program_id),
+        compute_config_pda(program_account_id),
         "Config account must be the CONFIG PDA"
     );
 
@@ -77,7 +77,7 @@ pub fn pay_fees(
     assert_eq!(
         vault.account_id,
         compute_vault_pda(
-            self_program_id,
+            program_account_id,
             institution_account.account_id,
             token_definition_id
         ),
@@ -85,6 +85,7 @@ pub fn pay_fees(
     );
 
     let mut allocations = Vec::new();
+    let mut category_diffs = Vec::new();
     for category_account in &mut categories {
         let mut category = FeeCategory::try_from(&category_account.account.data)
             .expect("Category account must hold valid FeeCategory data");
@@ -97,6 +98,7 @@ pub fn pay_fees(
             "Category not registered on institution"
         );
         if !category.is_active {
+            category_diffs.push(AccountStateDiff::unchanged(category_account.clone()));
             continue;
         }
         let share = amount
@@ -107,7 +109,14 @@ pub fn pay_fees(
             .total_collected
             .checked_add(share)
             .expect("collected overflow");
+        let category_pre = category_account.clone();
         category_account.account.data = (&category).into();
+        let category_data = category_account.account.data.clone();
+        category_diffs.push(AccountStateDiff::new(
+            category_pre,
+            BalanceDiff::Add(0),
+            category_data,
+        ));
         allocations.push(FeeAllocation {
             category_id: category_account.account_id,
             amount: share,
@@ -129,14 +138,18 @@ pub fn pay_fees(
         .total_fees_collected
         .checked_add(amount)
         .expect("institution collected overflow");
-    institution_account.account.data = (&institution).into();
-    payment_account.account.data = (&payment).into();
 
-    let mut vault_authorized = vault.clone();
-    vault_authorized.is_authorized = true;
+    let institution_pre = institution_account.clone();
+    institution_account.account.data = (&institution).into();
+    let institution_data = institution_account.account.data;
+
+    let payment_pre = payment_account.clone();
+    payment_account.account.data = (&payment).into();
+    let payment_data = payment_account.account.data;
+
     let transfer_call = ChainedCall::new(
         config.token_program_id,
-        vec![payer_holding.clone(), vault_authorized],
+        vec![payer_holding.account_id, vault.account_id],
         &token_core::Instruction::Transfer {
             amount_to_transfer: amount,
         },
@@ -146,17 +159,15 @@ pub fn pay_fees(
         token_definition_id,
     )]);
 
-    let mut posts = vec![
-        AccountPostState::new(config_account.account),
-        AccountPostState::new(institution_account.account),
-        AccountPostState::new_claimed_if_default(payment_account.account, Claim::Authorized),
-        AccountPostState::new(payer.account),
-        AccountPostState::new(payer_holding.account),
-        AccountPostState::new(vault.account),
+    let mut diffs = vec![
+        AccountStateDiff::unchanged(config_account),
+        AccountStateDiff::new(institution_pre, BalanceDiff::Add(0), institution_data),
+        AccountStateDiff::new(payment_pre, BalanceDiff::Add(0), payment_data),
+        AccountStateDiff::unchanged(payer),
+        AccountStateDiff::unchanged(payer_holding),
+        AccountStateDiff::unchanged(vault),
     ];
-    for category_account in categories {
-        posts.push(AccountPostState::new(category_account.account));
-    }
+    diffs.extend(category_diffs);
 
-    (posts, vec![transfer_call])
+    (diffs, vec![transfer_call])
 }

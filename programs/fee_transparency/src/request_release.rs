@@ -1,7 +1,7 @@
 use fee_transparency_core::{FeeCategory, Institution, ReleaseRequest, ReleaseStatus};
 use nssa_core::{
-    account::{Account, AccountWithMetadata},
-    program::{AccountPostState, Claim},
+    account::{Account, AccountWithMetadata, BalanceDiff},
+    program::AccountStateDiff,
 };
 
 pub fn request_release(
@@ -12,7 +12,7 @@ pub fn request_release(
     amount: u128,
     purpose: String,
     evidence_hash: String,
-) -> Vec<AccountPostState> {
+) -> Vec<AccountStateDiff> {
     assert!(admin.is_authorized, "Admin must authorize release request");
     assert!(
         release_account.account == Account::default(),
@@ -53,12 +53,15 @@ pub fn request_release(
         approvers: vec![],
         rejectors: vec![],
     };
+
+    let pre = release_account.clone();
     release_account.account.data = (&release).into();
+    let post_data = release_account.account.data;
 
     vec![
-        AccountPostState::new(institution_account.account),
-        AccountPostState::new(category_account.account),
-        AccountPostState::new_claimed_if_default(release_account.account, Claim::Authorized),
-        AccountPostState::new(admin.account),
+        AccountStateDiff::unchanged(institution_account),
+        AccountStateDiff::unchanged(category_account),
+        AccountStateDiff::new(pre, BalanceDiff::Add(0), post_data),
+        AccountStateDiff::unchanged(admin),
     ]
 }

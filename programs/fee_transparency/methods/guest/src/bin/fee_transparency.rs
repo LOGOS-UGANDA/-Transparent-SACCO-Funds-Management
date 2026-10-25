@@ -3,7 +3,6 @@
 use fee_transparency_core::InstitutionType;
 use nssa_core::{
     account::{Account, AccountId, AccountWithMetadata},
-    program::ProgramId,
 };
 use spel_framework::context::ProgramContext;
 use spel_framework::prelude::*;
@@ -43,12 +42,12 @@ mod fee_transparency {
         ctx: ProgramContext,
         #[account(mut)]
         config: AccountWithMetadata,
-        token_program_id: ProgramId,
+        token_program_id: AccountId,
     ) -> SpelResult {
         let post_states = fee_transparency_program::initialize::initialize(
             config,
             token_program_id,
-            ctx.self_program_id,
+            ctx.self_account_id,
         );
         Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
@@ -112,7 +111,7 @@ mod fee_transparency {
                 token_definition,
                 vault,
                 admin,
-                ctx.self_program_id,
+                ctx.self_account_id,
             );
         Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
@@ -215,7 +214,7 @@ mod fee_transparency {
             payer_name,
             reference_number,
             amount,
-            ctx.self_program_id,
+            ctx.self_account_id,
         );
         Ok(spel_framework::SpelOutput::execute(post_states, chained_calls))
     }
@@ -302,7 +301,7 @@ mod fee_transparency {
                 release,
                 vault,
                 treasury_holding,
-                ctx.self_program_id,
+                ctx.self_account_id,
             );
         Ok(spel_framework::SpelOutput::execute(post_states, chained_calls))
     }

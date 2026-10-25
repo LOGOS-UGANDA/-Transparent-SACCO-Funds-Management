@@ -1,6 +1,6 @@
 # Fee custody design (LEZ)
 
-Status: **adopted for v1** (implemented in `programs/sacco_ledger`).
+Status: **adopted for v1** (implemented in `programs/fee_transparency`).
 
 ## Goal
 
@@ -41,7 +41,7 @@ Seeds are hashed with RISC Zero SHA-256 (same pattern as ATA / AMM):
 | Config | `b"CONFIG"` |
 | Institution vault | `institution_id \|\| token_definition_id` (32 + 32 bytes) |
 
-Vault address: `AccountId::for_public_pda(sacco_ledger_program_id, vault_seed)`.
+Vault address: `AccountId::for_public_pda(fee_transparency_program_id, vault_seed)`.
 
 ## Instructions (custody-related)
 

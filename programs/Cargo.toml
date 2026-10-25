@@ -1,11 +1,11 @@
 [workspace]
 members = [
-    "sacco_ledger/core",
-    "sacco_ledger",
-    "sacco_ledger/methods",
+    "fee_transparency/core",
+    "fee_transparency",
+    "fee_transparency/methods",
 ]
 exclude = [
-    "sacco_ledger/methods/guest",
+    "fee_transparency/methods/guest",
 ]
 resolver = "2"
 
@@ -14,13 +14,13 @@ edition = "2021"
 version = "0.1.0"
 
 [workspace.dependencies]
-nssa_core = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.2.5-rc2", features = ["host"], package = "lee_core" }
+nssa_core = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.2.0", features = ["host"], package = "lee_core" }
 serde = { version = "1.0", features = ["derive"] }
 borsh = { version = "1.5", features = ["derive"] }
 risc0-zkvm = { version = "=3.0.5" }
 token_core = { git = "https://github.com/logos-blockchain/lez-programs.git", package = "token_core" }
-sacco_ledger_core = { path = "sacco_ledger/core" }
-sacco_ledger_program = { path = "sacco_ledger" }
+fee_transparency_core = { path = "fee_transparency/core" }
+fee_transparency_program = { path = "fee_transparency" }
 
 [workspace.lints.rust]
 rust_2018_idioms = { level = "deny", priority = -1 }

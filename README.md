@@ -4,6 +4,8 @@
 
 A Logos-native platform that locks institutional fees on the [Logos Execution Zone (LEZ)](https://docs.logos.co/), so funds are only released for their stated purpose. Built for universities, SACCOs, and cooperatives — shippable both as a **standalone app** and as a **Basecamp module** users can install from a package repository.
 
+> **Pivot:** the product is pivoting from university fee transparency to a **SACCO ledger** — deposits, loans and expenses recorded and approved on chain, with member balances private. The university-fee model below is the earlier concept and stays for reference. See the [pivot roadmap](./docs/roadmap-sacco-pivot.md) (12 steps, 8 phases).
+
 ---
 
 ## The problem

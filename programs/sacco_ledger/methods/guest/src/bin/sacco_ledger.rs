@@ -1,33 +1,14 @@
 #![cfg_attr(not(test), no_main)]
 
-use sacco_ledger_core::InstitutionType;
-use nssa_core::{
-    account::{Account, AccountId, AccountWithMetadata},
+use nssa_core::account::{AccountId, AccountWithMetadata};
+use sacco_ledger_core::{
+    DepositType, Instruction,
 };
 use spel_framework::context::ProgramContext;
 use spel_framework::prelude::*;
 
 #[cfg(not(test))]
 risc0_zkvm::guest::entry!(main);
-
-fn collect_categories(
-    category_0: AccountWithMetadata,
-    category_1: AccountWithMetadata,
-    category_2: AccountWithMetadata,
-    category_3: AccountWithMetadata,
-    category_4: AccountWithMetadata,
-    category_5: AccountWithMetadata,
-    category_6: AccountWithMetadata,
-    category_7: AccountWithMetadata,
-) -> Vec<AccountWithMetadata> {
-    [
-        category_0, category_1, category_2, category_3, category_4, category_5, category_6,
-        category_7,
-    ]
-    .into_iter()
-    .filter(|account| account.account != Account::default())
-    .collect()
-}
 
 #[lez_program(instruction = "sacco_ledger_core::Instruction")]
 mod sacco_ledger {
@@ -42,77 +23,41 @@ mod sacco_ledger {
         ctx: ProgramContext,
         #[account(mut)]
         config: AccountWithMetadata,
-        token_program_id: AccountId,
     ) -> SpelResult {
-        let post_states = sacco_ledger_program::initialize::initialize(
-            config,
-            token_program_id,
-            ctx.self_account_id,
-        );
+        let post_states = sacco_ledger_program::initialize::initialize(config, ctx.self_account_id);
         Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
 
     #[instruction]
-    pub fn register_institution(
+    pub fn register_sacco(
         _ctx: ProgramContext,
         #[account(mut)]
-        institution: AccountWithMetadata,
+        sacco: AccountWithMetadata,
         #[account(signer)]
         admin: AccountWithMetadata,
         name: String,
         registration_number: String,
-        institution_type: InstitutionType,
         treasury: AccountId,
-        required_approvals: u8,
     ) -> SpelResult {
-        let post_states = sacco_ledger_program::register_institution::register_institution(
-            institution,
+        let post_states = sacco_ledger_program::register_sacco::register_sacco(
+            sacco,
             admin,
             name,
             registration_number,
-            institution_type,
             treasury,
-            required_approvals,
         );
         Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
 
     #[instruction]
-    pub fn verify_institution(
+    pub fn verify_sacco(
         _ctx: ProgramContext,
         #[account(mut)]
-        institution: AccountWithMetadata,
+        sacco: AccountWithMetadata,
         #[account(signer)]
         registrar: AccountWithMetadata,
     ) -> SpelResult {
-        let post_states = sacco_ledger_program::verify_institution::verify_institution(
-            institution,
-            registrar,
-        );
-        Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
-    }
-
-    #[instruction]
-    pub fn initialize_institution_vault(
-        ctx: ProgramContext,
-        config: AccountWithMetadata,
-        #[account(mut)]
-        institution: AccountWithMetadata,
-        token_definition: AccountWithMetadata,
-        #[account(mut)]
-        vault: AccountWithMetadata,
-        #[account(signer)]
-        admin: AccountWithMetadata,
-    ) -> SpelResult {
-        let post_states =
-            sacco_ledger_program::initialize_institution_vault::initialize_institution_vault(
-                config,
-                institution,
-                token_definition,
-                vault,
-                admin,
-                ctx.self_account_id,
-            );
+        let post_states = sacco_ledger_program::verify_sacco::verify_sacco(sacco, registrar);
         Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
 
@@ -120,189 +65,275 @@ mod sacco_ledger {
     pub fn add_approver(
         _ctx: ProgramContext,
         #[account(mut)]
-        institution: AccountWithMetadata,
+        sacco: AccountWithMetadata,
         #[account(signer)]
         admin: AccountWithMetadata,
         approver: AccountId,
     ) -> SpelResult {
-        let post_states = sacco_ledger_program::add_approver::add_approver(
-            institution,
-            admin,
-            approver,
-        );
+        let post_states =
+            sacco_ledger_program::add_approver::add_approver(sacco, admin, approver);
         Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
 
     #[instruction]
-    pub fn create_fee_category(
+    pub fn add_supervisor(
         _ctx: ProgramContext,
         #[account(mut)]
-        institution: AccountWithMetadata,
-        #[account(mut)]
-        category: AccountWithMetadata,
+        sacco: AccountWithMetadata,
         #[account(signer)]
         admin: AccountWithMetadata,
-        name: String,
-        description: String,
-        allocated_percentage_bps: u16,
+        supervisor: AccountId,
     ) -> SpelResult {
-        let existing = vec![];
-        let post_states = sacco_ledger_program::create_fee_category::create_fee_category(
-            institution,
-            category,
-            admin,
-            name,
-            description,
-            allocated_percentage_bps,
-            &existing,
-        );
+        let post_states =
+            sacco_ledger_program::add_supervisor::add_supervisor(sacco, admin, supervisor);
         Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
 
     #[instruction]
-    pub fn pay_fees(
-        ctx: ProgramContext,
-        config: AccountWithMetadata,
+    pub fn add_member(
+        _ctx: ProgramContext,
         #[account(mut)]
-        institution: AccountWithMetadata,
+        sacco: AccountWithMetadata,
         #[account(mut)]
-        payment: AccountWithMetadata,
+        member: AccountWithMetadata,
         #[account(signer)]
-        payer: AccountWithMetadata,
+        admin: AccountWithMetadata,
+        identity: AccountId,
+    ) -> SpelResult {
+        let post_states =
+            sacco_ledger_program::add_member::add_member(sacco, member, admin, identity);
+        Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
+    }
+
+    #[instruction]
+    pub fn record_deposit(
+        _ctx: ProgramContext,
         #[account(mut)]
-        payer_holding: AccountWithMetadata,
+        sacco: AccountWithMetadata,
         #[account(mut)]
-        vault: AccountWithMetadata,
+        member: AccountWithMetadata,
         #[account(mut)]
-        category_0: AccountWithMetadata,
-        #[account(mut)]
-        category_1: AccountWithMetadata,
-        #[account(mut)]
-        category_2: AccountWithMetadata,
-        #[account(mut)]
-        category_3: AccountWithMetadata,
-        #[account(mut)]
-        category_4: AccountWithMetadata,
-        #[account(mut)]
-        category_5: AccountWithMetadata,
-        #[account(mut)]
-        category_6: AccountWithMetadata,
-        #[account(mut)]
-        category_7: AccountWithMetadata,
-        payer_name: String,
-        reference_number: String,
+        deposit: AccountWithMetadata,
+        #[account(signer)]
+        recorder: AccountWithMetadata,
+        member_id: AccountId,
         amount: u128,
+        deposit_type: DepositType,
+        reference: String,
     ) -> SpelResult {
-        let categories = collect_categories(
-            category_0,
-            category_1,
-            category_2,
-            category_3,
-            category_4,
-            category_5,
-            category_6,
-            category_7,
-        );
-        let (post_states, chained_calls) = sacco_ledger_program::pay_fees::pay_fees(
-            config,
-            institution,
-            payment,
-            payer,
-            payer_holding,
-            vault,
-            categories,
-            payer_name,
-            reference_number,
+        let _ = member_id; // identity lives on the member account; asserted by the caller layer
+        let post_states = sacco_ledger_program::record_deposit::record_deposit(
+            sacco,
+            member,
+            deposit,
+            recorder,
             amount,
-            ctx.self_account_id,
+            deposit_type,
+            reference,
         );
-        Ok(spel_framework::SpelOutput::execute(post_states, chained_calls))
+        Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
 
     #[instruction]
-    pub fn request_release(
+    pub fn confirm_deposit(
         _ctx: ProgramContext,
-        institution: AccountWithMetadata,
-        category: AccountWithMetadata,
         #[account(mut)]
-        release: AccountWithMetadata,
+        deposit: AccountWithMetadata,
         #[account(signer)]
-        admin: AccountWithMetadata,
+        member: AccountWithMetadata,
+    ) -> SpelResult {
+        let post_states = sacco_ledger_program::confirm_deposit::confirm_deposit(deposit, member);
+        Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
+    }
+
+    #[instruction]
+    pub fn apply_loan(
+        _ctx: ProgramContext,
+        #[account(mut)]
+        sacco: AccountWithMetadata,
+        #[account(mut)]
+        member: AccountWithMetadata,
+        #[account(mut)]
+        loan: AccountWithMetadata,
+        #[account(signer)]
+        member_signer: AccountWithMetadata,
         amount: u128,
         purpose: String,
-        evidence_hash: String,
     ) -> SpelResult {
-        let post_states = sacco_ledger_program::request_release::request_release(
-            institution,
-            category,
-            release,
-            admin,
+        let post_states = sacco_ledger_program::apply_loan::apply_loan(
+            sacco,
+            member,
+            loan,
+            member_signer,
             amount,
             purpose,
-            evidence_hash,
         );
         Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
 
     #[instruction]
-    pub fn approve_release(
+    pub fn approve_loan(
         _ctx: ProgramContext,
-        institution: AccountWithMetadata,
+        sacco: AccountWithMetadata,
         #[account(mut)]
-        release: AccountWithMetadata,
+        loan: AccountWithMetadata,
         #[account(signer)]
         approver: AccountWithMetadata,
     ) -> SpelResult {
-        let post_states = sacco_ledger_program::approve_release::approve_release(
-            institution,
-            release,
-            approver,
-        );
+        let post_states = sacco_ledger_program::approve_loan::approve_loan(sacco, loan, approver);
         Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
 
     #[instruction]
-    pub fn reject_release(
+    pub fn reject_loan(
         _ctx: ProgramContext,
-        institution: AccountWithMetadata,
+        sacco: AccountWithMetadata,
         #[account(mut)]
-        release: AccountWithMetadata,
+        loan: AccountWithMetadata,
         #[account(signer)]
         approver: AccountWithMetadata,
     ) -> SpelResult {
-        let post_states = sacco_ledger_program::reject_release::reject_release(
-            institution,
-            release,
+        let post_states = sacco_ledger_program::reject_loan::reject_loan(sacco, loan, approver);
+        Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
+    }
+
+    #[instruction]
+    pub fn disburse_loan(
+        _ctx: ProgramContext,
+        #[account(mut)]
+        sacco: AccountWithMetadata,
+        member: AccountWithMetadata,
+        #[account(mut)]
+        loan: AccountWithMetadata,
+        #[account(signer)]
+        approver: AccountWithMetadata,
+        evidence_cid: String,
+    ) -> SpelResult {
+        let post_states = sacco_ledger_program::disburse_loan::disburse_loan(
+            sacco,
+            member,
+            loan,
             approver,
+            evidence_cid,
         );
         Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
 
     #[instruction]
-    pub fn execute_release(
-        ctx: ProgramContext,
-        config: AccountWithMetadata,
+    pub fn record_repayment(
+        _ctx: ProgramContext,
         #[account(mut)]
-        institution: AccountWithMetadata,
+        sacco: AccountWithMetadata,
+        member: AccountWithMetadata,
         #[account(mut)]
-        category: AccountWithMetadata,
-        #[account(mut)]
-        release: AccountWithMetadata,
-        #[account(mut)]
-        vault: AccountWithMetadata,
-        #[account(mut)]
-        treasury_holding: AccountWithMetadata,
+        loan: AccountWithMetadata,
+        #[account(signer)]
+        approver: AccountWithMetadata,
+        loan_id: AccountId,
+        amount: u128,
+        reference: String,
     ) -> SpelResult {
-        let (post_states, chained_calls) =
-            sacco_ledger_program::execute_release::execute_release(
-                config,
-                institution,
-                category,
-                release,
-                vault,
-                treasury_holding,
-                ctx.self_account_id,
-            );
-        Ok(spel_framework::SpelOutput::execute(post_states, chained_calls))
+        let post_states = sacco_ledger_program::record_repayment::record_repayment(
+            sacco,
+            member,
+            loan,
+            approver,
+            loan_id,
+            amount,
+            reference,
+        );
+        Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
+    }
+
+    #[instruction]
+    pub fn propose_expense(
+        _ctx: ProgramContext,
+        sacco: AccountWithMetadata,
+        #[account(mut)]
+        expense: AccountWithMetadata,
+        #[account(signer)]
+        proposer: AccountWithMetadata,
+        amount: u128,
+        purpose: String,
+        evidence_cid: String,
+    ) -> SpelResult {
+        let post_states = sacco_ledger_program::propose_expense::propose_expense(
+            sacco,
+            expense,
+            proposer,
+            amount,
+            purpose,
+            evidence_cid,
+        );
+        Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
+    }
+
+    #[instruction]
+    pub fn approve_expense(
+        _ctx: ProgramContext,
+        sacco: AccountWithMetadata,
+        #[account(mut)]
+        expense: AccountWithMetadata,
+        #[account(signer)]
+        approver: AccountWithMetadata,
+    ) -> SpelResult {
+        let post_states =
+            sacco_ledger_program::approve_expense::approve_expense(sacco, expense, approver);
+        Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
+    }
+
+    #[instruction]
+    pub fn reject_expense(
+        _ctx: ProgramContext,
+        sacco: AccountWithMetadata,
+        #[account(mut)]
+        expense: AccountWithMetadata,
+        #[account(signer)]
+        approver: AccountWithMetadata,
+    ) -> SpelResult {
+        let post_states =
+            sacco_ledger_program::reject_expense::reject_expense(sacco, expense, approver);
+        Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
+    }
+
+    #[instruction]
+    pub fn execute_expense(
+        _ctx: ProgramContext,
+        #[account(mut)]
+        sacco: AccountWithMetadata,
+        #[account(mut)]
+        expense: AccountWithMetadata,
+        #[account(signer)]
+        approver: AccountWithMetadata,
+        executed_evidence: String,
+    ) -> SpelResult {
+        let post_states = sacco_ledger_program::execute_expense::execute_expense(
+            sacco,
+            expense,
+            approver,
+            executed_evidence,
+        );
+        Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
+    }
+
+    #[instruction]
+    pub fn post_period_summary(
+        _ctx: ProgramContext,
+        sacco: AccountWithMetadata,
+        #[account(mut)]
+        summary: AccountWithMetadata,
+        #[account(signer)]
+        poster: AccountWithMetadata,
+        label: String,
+    ) -> SpelResult {
+        let post_states = sacco_ledger_program::post_period_summary::post_period_summary(
+            sacco,
+            summary,
+            poster,
+            label,
+        );
+        Ok(spel_framework::SpelOutput::execute(post_states, vec![]))
     }
 }
+
+fn main() {}

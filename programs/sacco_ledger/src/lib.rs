@@ -18,6 +18,7 @@ pub mod confirm_deposit;
 pub mod disburse_loan;
 pub mod execute_expense;
 pub mod propose_expense;
+pub mod post_period_summary;
 pub mod record_deposit;
 pub mod record_repayment;
 pub mod reject_expense;

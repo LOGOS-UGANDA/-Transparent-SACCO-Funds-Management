@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "name": "fee_transparency",
+  "name": "sacco_ledger",
   "instructions": [
     {
       "name": "initialize",

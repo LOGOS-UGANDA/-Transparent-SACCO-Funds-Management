@@ -1,4 +1,4 @@
-use fee_transparency_core::{
+use sacco_ledger_core::{
     compute_config_pda, compute_vault_pda, compute_vault_pda_seed, FeeAllocation, FeeCategory,
     FeeStatus, Institution, Payment, ProgramConfig, BPS_DENOMINATOR, MAX_PAY_FEE_CATEGORIES,
 };

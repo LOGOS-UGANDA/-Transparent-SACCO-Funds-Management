@@ -1,4 +1,4 @@
-use fee_transparency_core::{Institution, InstitutionType};
+use sacco_ledger_core::{Institution, InstitutionType};
 use nssa_core::{
     account::{Account, AccountId, AccountWithMetadata, BalanceDiff},
     program::AccountStateDiff,

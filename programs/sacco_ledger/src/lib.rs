@@ -3,7 +3,7 @@
 //! Pure state-transition helpers — no I/O. Guest entrypoints live under `methods/guest`.
 //! Custody design: repository `docs/custody.md`.
 
-pub use fee_transparency_core as core;
+pub use sacco_ledger_core as core;
 
 pub mod add_approver;
 pub mod approve_release;

@@ -1,4 +1,4 @@
-use fee_transparency_core::{
+use sacco_ledger_core::{
     compute_config_pda, compute_vault_pda, compute_vault_pda_seed, FeeCategory, Institution,
     ProgramConfig, ReleaseRequest, ReleaseStatus,
 };

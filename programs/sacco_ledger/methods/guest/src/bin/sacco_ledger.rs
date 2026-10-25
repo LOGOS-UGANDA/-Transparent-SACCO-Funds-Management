@@ -1,6 +1,6 @@
 #![cfg_attr(not(test), no_main)]
 
-use fee_transparency_core::InstitutionType;
+use sacco_ledger_core::InstitutionType;
 use nssa_core::{
     account::{Account, AccountId, AccountWithMetadata},
 };
@@ -29,8 +29,8 @@ fn collect_categories(
     .collect()
 }
 
-#[lez_program(instruction = "fee_transparency_core::Instruction")]
-mod fee_transparency {
+#[lez_program(instruction = "sacco_ledger_core::Instruction")]
+mod sacco_ledger {
     #[expect(
         unused_imports,
         reason = "SPEL instruction macro requires importing parent-scope handler types"
@@ -44,7 +44,7 @@ mod fee_transparency {
         config: AccountWithMetadata,
         token_program_id: AccountId,
     ) -> SpelResult {
-        let post_states = fee_transparency_program::initialize::initialize(
+        let post_states = sacco_ledger_program::initialize::initialize(
             config,
             token_program_id,
             ctx.self_account_id,
@@ -65,7 +65,7 @@ mod fee_transparency {
         treasury: AccountId,
         required_approvals: u8,
     ) -> SpelResult {
-        let post_states = fee_transparency_program::register_institution::register_institution(
+        let post_states = sacco_ledger_program::register_institution::register_institution(
             institution,
             admin,
             name,
@@ -85,7 +85,7 @@ mod fee_transparency {
         #[account(signer)]
         registrar: AccountWithMetadata,
     ) -> SpelResult {
-        let post_states = fee_transparency_program::verify_institution::verify_institution(
+        let post_states = sacco_ledger_program::verify_institution::verify_institution(
             institution,
             registrar,
         );
@@ -105,7 +105,7 @@ mod fee_transparency {
         admin: AccountWithMetadata,
     ) -> SpelResult {
         let post_states =
-            fee_transparency_program::initialize_institution_vault::initialize_institution_vault(
+            sacco_ledger_program::initialize_institution_vault::initialize_institution_vault(
                 config,
                 institution,
                 token_definition,
@@ -125,7 +125,7 @@ mod fee_transparency {
         admin: AccountWithMetadata,
         approver: AccountId,
     ) -> SpelResult {
-        let post_states = fee_transparency_program::add_approver::add_approver(
+        let post_states = sacco_ledger_program::add_approver::add_approver(
             institution,
             admin,
             approver,
@@ -147,7 +147,7 @@ mod fee_transparency {
         allocated_percentage_bps: u16,
     ) -> SpelResult {
         let existing = vec![];
-        let post_states = fee_transparency_program::create_fee_category::create_fee_category(
+        let post_states = sacco_ledger_program::create_fee_category::create_fee_category(
             institution,
             category,
             admin,
@@ -203,7 +203,7 @@ mod fee_transparency {
             category_6,
             category_7,
         );
-        let (post_states, chained_calls) = fee_transparency_program::pay_fees::pay_fees(
+        let (post_states, chained_calls) = sacco_ledger_program::pay_fees::pay_fees(
             config,
             institution,
             payment,
@@ -232,7 +232,7 @@ mod fee_transparency {
         purpose: String,
         evidence_hash: String,
     ) -> SpelResult {
-        let post_states = fee_transparency_program::request_release::request_release(
+        let post_states = sacco_ledger_program::request_release::request_release(
             institution,
             category,
             release,
@@ -253,7 +253,7 @@ mod fee_transparency {
         #[account(signer)]
         approver: AccountWithMetadata,
     ) -> SpelResult {
-        let post_states = fee_transparency_program::approve_release::approve_release(
+        let post_states = sacco_ledger_program::approve_release::approve_release(
             institution,
             release,
             approver,
@@ -270,7 +270,7 @@ mod fee_transparency {
         #[account(signer)]
         approver: AccountWithMetadata,
     ) -> SpelResult {
-        let post_states = fee_transparency_program::reject_release::reject_release(
+        let post_states = sacco_ledger_program::reject_release::reject_release(
             institution,
             release,
             approver,
@@ -294,7 +294,7 @@ mod fee_transparency {
         treasury_holding: AccountWithMetadata,
     ) -> SpelResult {
         let (post_states, chained_calls) =
-            fee_transparency_program::execute_release::execute_release(
+            sacco_ledger_program::execute_release::execute_release(
                 config,
                 institution,
                 category,

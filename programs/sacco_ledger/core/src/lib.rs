@@ -49,7 +49,7 @@ pub enum ReleaseStatus {
 }
 
 /// Program instructions. Account lists are documented per variant; handlers live in
-/// `fee_transparency_program`.
+/// `sacco_ledger_program`.
 #[derive(Serialize, Deserialize)]
 pub enum Instruction {
     /// Create the singleton program config PDA and store the Token Program id.

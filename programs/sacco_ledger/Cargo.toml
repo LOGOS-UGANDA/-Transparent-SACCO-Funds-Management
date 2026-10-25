@@ -1,5 +1,5 @@
 [package]
-name = "fee_transparency_program"
+name = "sacco_ledger_program"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,5 +8,5 @@ workspace = true
 
 [dependencies]
 nssa_core = { workspace = true }
-fee_transparency_core = { workspace = true }
+sacco_ledger_core = { workspace = true }
 token_core = { workspace = true }

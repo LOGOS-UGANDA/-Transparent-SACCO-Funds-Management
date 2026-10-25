@@ -1028,35 +1028,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
-name = "fee_transparency-methods"
-version = "0.1.0"
-dependencies = [
- "fee_transparency_core",
- "risc0-build",
- "risc0-zkvm",
-]
-
-[[package]]
-name = "fee_transparency_core"
-version = "0.1.0"
-dependencies = [
- "borsh",
- "lee_core",
- "risc0-zkvm",
- "serde",
- "spel-framework-macros",
-]
-
-[[package]]
-name = "fee_transparency_program"
-version = "0.1.0"
-dependencies = [
- "fee_transparency_core",
- "lee_core",
- "token_core",
-]
-
-[[package]]
 name = "find-msvc-tools"
 version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2778,6 +2749,35 @@ dependencies = [
  "thiserror 2.0.21",
  "toml",
  "yaml-rust2",
+]
+
+[[package]]
+name = "sacco_ledger-methods"
+version = "0.1.0"
+dependencies = [
+ "risc0-build",
+ "risc0-zkvm",
+ "sacco_ledger_core",
+]
+
+[[package]]
+name = "sacco_ledger_core"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "lee_core",
+ "risc0-zkvm",
+ "serde",
+ "spel-framework-macros",
+]
+
+[[package]]
+name = "sacco_ledger_program"
+version = "0.1.0"
+dependencies = [
+ "lee_core",
+ "sacco_ledger_core",
+ "token_core",
 ]
 
 [[package]]

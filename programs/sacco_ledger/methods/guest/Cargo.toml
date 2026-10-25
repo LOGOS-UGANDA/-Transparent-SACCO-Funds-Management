@@ -1,5 +1,5 @@
 [package]
-name = "fee_transparency-guest"
+name = "sacco_ledger-guest"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,16 +14,16 @@ rust_2018_idioms = { level = "deny", priority = -1 }
 unsafe_code = "deny"
 
 [[bin]]
-name = "fee_transparency"
-path = "src/bin/fee_transparency.rs"
+name = "sacco_ledger"
+path = "src/bin/sacco_ledger.rs"
 
 [dependencies]
 spel-framework = { git = "https://github.com/logos-co/spel.git", rev = "c6f73ce21e4805f8430f03afdbdedf0b7e479a5e", package = "spel-framework" }
 nssa_core = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.2.5-rc2", package = "lee_core" }
 risc0-zkvm = { version = "=3.0.5", default-features = false }
 ruint = { version = "=1.17.0", default-features = false }
-fee_transparency_core = { path = "../../core" }
-fee_transparency_program = { path = "../..", package = "fee_transparency_program" }
+sacco_ledger_core = { path = "../../core" }
+sacco_ledger_program = { path = "../..", package = "sacco_ledger_program" }
 token_core = { git = "https://github.com/logos-blockchain/lez-programs.git", package = "token_core" }
 serde = { version = "1.0", features = ["derive"] }
 borsh = "1.5"

@@ -4,7 +4,7 @@ Transparent SACCO is a Logos stack product: LEZ program + core module + UI modul
 
 ## Components
 
-### LEZ program — `programs/fee_transparency`
+### LEZ program — `programs/sacco_ledger`
 
 On-chain (zone) logic for institutions, fee categories, payments, release requests, and multi-sig approvals. Prefer **public** LEZ accounts for the audit trail so payers can verify allocations without a privileged indexer.
 
@@ -25,7 +25,7 @@ On-chain (zone) logic for institutions, fee categories, payments, release reques
 
 Implementation: Rust guest for the Logos Execution Environment (LEE / RISC Zero), SPEL macros, deployed with LEZ wallet tooling — not Solidity/EVM.
 
-IDL: [idl.md](./idl.md) · [`artifacts/fee_transparency-idl.json`](../artifacts/fee_transparency-idl.json)
+IDL: [idl.md](./idl.md) · [`artifacts/sacco_ledger-idl.json`](../artifacts/sacco_ledger-idl.json)
 
 ### Core module — `modules/sacco_core`
 

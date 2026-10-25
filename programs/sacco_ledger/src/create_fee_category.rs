@@ -1,4 +1,4 @@
-use fee_transparency_core::{FeeCategory, Institution, BPS_DENOMINATOR};
+use sacco_ledger_core::{FeeCategory, Institution, BPS_DENOMINATOR};
 use nssa_core::{
     account::{Account, AccountWithMetadata, BalanceDiff},
     program::AccountStateDiff,

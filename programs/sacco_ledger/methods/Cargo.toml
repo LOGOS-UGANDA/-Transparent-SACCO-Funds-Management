@@ -1,5 +1,5 @@
 [package]
-name = "fee_transparency-methods"
+name = "sacco_ledger-methods"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,7 +11,7 @@ risc0-build = "=3.0.5"
 
 [dependencies]
 risc0-zkvm = { version = "=3.0.5", features = ["std"] }
-fee_transparency_core = { path = "../core" }
+sacco_ledger_core = { path = "../core" }
 
 [package.metadata.risc0]
 methods = ["guest"]

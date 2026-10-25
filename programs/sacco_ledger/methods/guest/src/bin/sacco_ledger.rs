@@ -120,11 +120,11 @@ mod sacco_ledger {
         reference: String,
     ) -> SpelResult {
         let post_states = sacco_ledger_program::record_deposit::record_deposit(
-            member,
             sacco,
-            member,
+            member_account,
             deposit,
             recorder,
+            member,
             amount,
             deposit_type,
             reference,
@@ -224,7 +224,7 @@ mod sacco_ledger {
         sacco: AccountWithMetadata,
         member: AccountWithMetadata,
         #[account(mut)]
-        loan: AccountWithMetadata,
+        loan_account: AccountWithMetadata,
         #[account(signer)]
         approver: AccountWithMetadata,
         loan: AccountId,
@@ -234,7 +234,7 @@ mod sacco_ledger {
         let post_states = sacco_ledger_program::record_repayment::record_repayment(
             sacco,
             member,
-            loan,
+            loan_account,
             approver,
             loan,
             amount,

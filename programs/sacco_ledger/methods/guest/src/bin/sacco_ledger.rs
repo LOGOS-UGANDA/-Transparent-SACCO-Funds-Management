@@ -1,9 +1,7 @@
 #![cfg_attr(not(test), no_main)]
 
 use nssa_core::account::{AccountId, AccountWithMetadata};
-use sacco_ledger_core::{
-    DepositType, Instruction,
-};
+use sacco_ledger_core::DepositType;
 use spel_framework::context::ProgramContext;
 use spel_framework::prelude::*;
 
@@ -111,18 +109,18 @@ mod sacco_ledger {
         #[account(mut)]
         sacco: AccountWithMetadata,
         #[account(mut)]
-        member: AccountWithMetadata,
+        member_account: AccountWithMetadata,
         #[account(mut)]
         deposit: AccountWithMetadata,
         #[account(signer)]
         recorder: AccountWithMetadata,
-        member_id: AccountId,
+        member: AccountId,
         amount: u128,
         deposit_type: DepositType,
         reference: String,
     ) -> SpelResult {
-        let _ = member_id; // identity lives on the member account; asserted by the caller layer
         let post_states = sacco_ledger_program::record_deposit::record_deposit(
+            member,
             sacco,
             member,
             deposit,
@@ -229,7 +227,7 @@ mod sacco_ledger {
         loan: AccountWithMetadata,
         #[account(signer)]
         approver: AccountWithMetadata,
-        loan_id: AccountId,
+        loan: AccountId,
         amount: u128,
         reference: String,
     ) -> SpelResult {
@@ -238,7 +236,7 @@ mod sacco_ledger {
             member,
             loan,
             approver,
-            loan_id,
+            loan,
             amount,
             reference,
         );
@@ -336,4 +334,3 @@ mod sacco_ledger {
     }
 }
 
-fn main() {}

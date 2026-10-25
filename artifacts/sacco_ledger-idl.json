@@ -1,7 +1,7 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": "sacco_ledger",
-  "description": "Transparent SACCO attestation ledger: deposits, loans and expenses recorded and approved on chain; value stays off chain.",
+  "description": "Transparent SACCO attestation ledger: deposits, loans and expenses recorded and approved on chain; value stays off chain. Regenerated from the sacco_ledger_core::Instruction enum (borsh + serde).",
   "instructions": [
     {
       "name": "initialize",
@@ -169,7 +169,7 @@
       ],
       "args": [
         {
-          "name": "member_id",
+          "name": "member",
           "type": "account_id"
         },
         {
@@ -529,6 +529,7 @@
   ],
   "notes": [
     "Attestation model: the program records and approves off-chain money events; it holds no value and no token transfers occur.",
+    "Unit variants (verify_sacco, confirm_deposit, approve/reject loan and expense) carry no args; arg names match the Instruction enum fields exactly.",
     "The dormant custody model (institution vault, PayFees, category ledger) is reference code under programs/sacco_ledger/src/custody and core::custody."
   ]
 }

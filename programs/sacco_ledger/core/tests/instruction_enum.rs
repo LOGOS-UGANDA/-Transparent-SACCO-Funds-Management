@@ -15,13 +15,13 @@ fn roundtrip(instruction: Instruction) -> Instruction {
 #[test]
 fn instruction_enum_roundtrips_all_variants() {
     let cases = vec![
-        Instruction::Initialize {},
+        Instruction::Initialize,
         Instruction::RegisterSacco {
             name: "Kampala Traders SACCO".into(),
             registration_number: "UG-SACCO-001".into(),
             treasury: aid(1),
         },
-        Instruction::VerifySacco {},
+        Instruction::VerifySacco,
         Instruction::AddApprover { approver: aid(2) },
         Instruction::AddSupervisor { supervisor: aid(3) },
         Instruction::AddMember { identity: aid(4) },
@@ -31,13 +31,13 @@ fn instruction_enum_roundtrips_all_variants() {
             deposit_type: DepositType::Savings,
             reference: "MPZA-99182".into(),
         },
-        Instruction::ConfirmDeposit {},
+        Instruction::ConfirmDeposit,
         Instruction::ApplyLoan {
             amount: 150_000,
             purpose: "School fees".into(),
         },
-        Instruction::ApproveLoan {},
-        Instruction::RejectLoan {},
+        Instruction::ApproveLoan,
+        Instruction::RejectLoan,
         Instruction::DisburseLoan {
             evidence_cid: "bafy-disburse".into(),
         },
@@ -51,8 +51,8 @@ fn instruction_enum_roundtrips_all_variants() {
             purpose: "Stationery for the AGM".into(),
             evidence_cid: "bafy-expense".into(),
         },
-        Instruction::ApproveExpense {},
-        Instruction::RejectExpense {},
+        Instruction::ApproveExpense,
+        Instruction::RejectExpense,
         Instruction::ExecuteExpense {
             executed_evidence: "bafy-execution".into(),
         },

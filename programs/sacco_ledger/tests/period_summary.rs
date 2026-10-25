@@ -56,6 +56,7 @@ fn sacco_with_deposit() -> (AccountWithMetadata, AccountWithMetadata) {
         member_account2,
         deposit_account,
         admin.clone(),
+        aid(6),
         100_000,
         DepositType::Savings,
         "MPZA-3001".into(),

@@ -13,6 +13,7 @@ pub fn record_deposit(
     mut member_account: AccountWithMetadata,
     mut deposit_account: AccountWithMetadata,
     recorder: AccountWithMetadata,
+    member: AccountId,
     amount: u128,
     deposit_type: DepositType,
     reference: String,
@@ -37,16 +38,20 @@ pub fn record_deposit(
         "Deposit reference must not be empty"
     );
 
-    let mut member = Member::try_from(&member_account.account.data)
+    let mut member_state = Member::try_from(&member_account.account.data)
         .expect("Member account must hold valid Member data");
     assert_eq!(
-        member.sacco_id, sacco_account.account_id,
+        member_state.identity, member,
+        "Member account does not match the member id argument"
+    );
+    assert_eq!(
+        member_state.sacco_id, sacco_account.account_id,
         "Member belongs to a different SACCO"
     );
 
     let deposit = Deposit {
         sacco_id: sacco_account.account_id,
-        member_id: member.identity,
+        member_id: member_state.identity,
         amount,
         deposit_type,
         reference,
@@ -56,7 +61,7 @@ pub fn record_deposit(
 
     match deposit_type {
         DepositType::Savings => {
-            member.savings_balance = member
+            member_state.savings_balance = member_state
                 .savings_balance
                 .checked_add(amount)
                 .expect("savings balance overflow");
@@ -66,7 +71,7 @@ pub fn record_deposit(
                 .expect("savings total overflow");
         }
         DepositType::ShareCapital => {
-            member.share_capital_balance = member
+            member_state.share_capital_balance = member_state
                 .share_capital_balance
                 .checked_add(amount)
                 .expect("share capital balance overflow");
@@ -82,7 +87,7 @@ pub fn record_deposit(
     let sacco_data = sacco_account.account.data;
 
     let member_pre = member_account.clone();
-    member_account.account.data = (&member).into();
+    member_account.account.data = (&member_state).into();
     let member_data = member_account.account.data;
 
     let deposit_pre = deposit_account.clone();

@@ -154,13 +154,13 @@ pub struct PeriodSummary {
 /// SACCO ledger instructions. Account lists are documented per variant; handlers live
 /// in `sacco_ledger_program`. The attestation model: value never moves on chain —
 /// instructions record and approve off-chain money events.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub enum Instruction {
     /// Create the singleton SACCO registry config.
     ///
     /// Accounts:
     /// - Config account (uninitialized PDA)
-    Initialize {},
+    Initialize,
 
     /// Register a SACCO: public name, registration number and treasury contact.
     ///
@@ -178,7 +178,7 @@ pub enum Instruction {
     /// Accounts:
     /// - Sacco account (mut)
     /// - Registrar account (signer)
-    VerifySacco {},
+    VerifySacco,
 
     /// Add a multi-sig approver (treasurer or committee member).
     ///
@@ -222,7 +222,7 @@ pub enum Instruction {
     /// - Sacco account
     /// - Deposit account (mut)
     /// - Member account (signer)
-    ConfirmDeposit {},
+    ConfirmDeposit,
 
     /// Member applies for a loan.
     ///
@@ -239,7 +239,7 @@ pub enum Instruction {
     /// - Sacco account
     /// - Loan account (mut)
     /// - Approver account (signer)
-    ApproveLoan {},
+    ApproveLoan,
 
     /// Committee rejection of a loan.
     ///
@@ -247,7 +247,7 @@ pub enum Instruction {
     /// - Sacco account
     /// - Loan account (mut)
     /// - Approver account (signer)
-    RejectLoan {},
+    RejectLoan,
 
     /// Record loan disbursement (off-chain transfer) with storage evidence.
     ///
@@ -289,7 +289,7 @@ pub enum Instruction {
     /// - Sacco account
     /// - Expense account (mut)
     /// - Approver account (signer)
-    ApproveExpense {},
+    ApproveExpense,
 
     /// Committee rejection of a proposed expense.
     ///
@@ -297,7 +297,7 @@ pub enum Instruction {
     /// - Sacco account
     /// - Expense account (mut)
     /// - Approver account (signer)
-    RejectExpense {},
+    RejectExpense,
 
     /// Record execution of an approved expense: the off-chain payment reference.
     ///

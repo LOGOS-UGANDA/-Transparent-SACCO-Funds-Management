@@ -4,8 +4,8 @@ Headless Logos **core module** for Transparent SACCO.
 
 ## Role
 
-- Expose fee-transparency operations to `sacco_ui` (and CLI via `logoscore`)
-- Later: call the deployed `fee_transparency` LEZ program / wallet APIs
+- Expose SACCO ledger operations to `sacco_ui` (and CLI via `logosctl`)
+- Later: call the deployed `sacco_ledger` LEZ program / wallet APIs
 - Optional: Logos Storage for release evidence CIDs
 
 ## API (scaffold)
@@ -29,8 +29,8 @@ Requires Nix + [`logos-module-builder`](https://github.com/logos-co/logos-module
 
 ```bash
 cd modules/sacco_core
-nix build .#lgx          # package as .lgx for Basecamp / lgpm
-# or follow the core-module tutorial for logoscore install
+nix build .#lgx          # package as .lgx for Basecamp / logosctl
+# or follow the core-module tutorial for logosctl install
 ```
 
 Preview / install steps: [docs/basecamp-publishing.md](../../docs/basecamp-publishing.md).

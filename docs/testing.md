@@ -74,17 +74,17 @@ nix run    # logos-standalone-app preview
 
 Expect: shell UI, status/demo buttons. Until `sacco_core` is installed alongside, core calls may fail — that is expected until both modules are packaged together.
 
-### Core via logoscore
+### Core via logosctl
 
 ```bash
 cd modules/sacco_core
 nix build .#lgx
-# install with lgpm into a local modules/ dir, then:
-logoscore -D -m ./modules
-logoscore load-module sacco_core
-logoscore call sacco_core getStatus
-logoscore call sacco_core payFees institution-id "Demo" REF-1 1000000
-logoscore stop
+# install with logosctl into a local modules/ dir, then:
+logosctl daemon -D -m ./modules
+logosctl package install sacco_core
+logosctl call sacco_core getStatus
+logosctl call sacco_core recordDeposit sacco-id member-id 1000000 savings MPZA-REF
+logosctl stop
 ```
 
 Today these return **scaffold JSON**, not chain txs. Still useful to prove the module loads and the API surface works.
@@ -125,9 +125,9 @@ BASECAMP_DIR="$HOME/Library/Application Support/Logos/LogosBasecamp"
 # Linux
 # BASECAMP_DIR="$HOME/.config/Logos/LogosBasecamp"
 
-lgpm --modules-dir "$BASECAMP_DIR/modules" install --file /path/to/sacco_core.lgx
+logosctl package install --file /path/to/sacco_core.lgx
 # UI modules may use plugins dir depending on package type:
-lgpm --ui-plugins-dir "$BASECAMP_DIR/plugins" install --file /path/to/sacco_ui.lgx
+logosctl package install --file /path/to/sacco_ui.lgx
 ```
 
 Or in Basecamp UI: **Package Manager → Install LGX Package** and select the `.lgx` files.

@@ -32,8 +32,8 @@ fn post_of(diffs: &[nssa_core::program::AccountStateDiff], i: usize) -> nssa_cor
 /// and an applied loan (account 7).
 fn fixture_with_applied_loan() -> Fixture {
     let mut sacco_account = blank_account(1);
-    let mut admin = blank_account(2);
-    let mut second = blank_account(3);
+    let admin = blank_account(2);
+    let second = blank_account(3);
     let mut member_account = blank_account(6);
 
     let diffs = register_sacco(

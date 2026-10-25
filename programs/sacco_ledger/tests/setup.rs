@@ -86,7 +86,7 @@ fn register_sacco_rejects_empty_name() {
 
 #[test]
 fn verify_sacco_by_admin() {
-    let (mut sacco_account, admin) = registered_sacco();
+    let (sacco_account, admin) = registered_sacco();
     let diffs = verify_sacco(sacco_account.clone(), admin);
     let post = diffs[0].post_data.as_ref().expect("sacco data");
     let sacco = Sacco::try_from(post).expect("sacco");
@@ -104,7 +104,7 @@ fn verify_sacco_requires_registrar() {
 
 #[test]
 fn add_approver_admin_only_and_rejects_duplicate() {
-    let (mut sacco_account, admin) = registered_sacco();
+    let (sacco_account, admin) = registered_sacco();
     let approver = aid(4);
     let diffs = add_approver(sacco_account.clone(), admin, approver);
     let post = diffs[0].post_data.as_ref().expect("sacco data");
@@ -147,7 +147,7 @@ fn add_supervisor_rejects_current_approver() {
 
 #[test]
 fn add_member_creates_member_account() {
-    let (mut sacco_account, admin) = registered_sacco();
+    let (sacco_account, admin) = registered_sacco();
     let member_account = blank_account(6);
     let diffs = add_member(sacco_account.clone(), member_account, admin, aid(6));
     assert_eq!(diffs.len(), 3);

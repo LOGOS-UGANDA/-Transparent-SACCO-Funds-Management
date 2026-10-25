@@ -205,7 +205,7 @@ fn reject_expense_approver_only() {
 
 #[test]
 fn execute_expense_records_off_chain_release() {
-    let (mut sacco_account, expense_account, admin, _second) = approved_expense();
+    let (sacco_account, expense_account, admin, _second) = approved_expense();
     let before = Sacco::try_from(&sacco_account.account.data).expect("sacco");
     let diffs = execute_expense(
         sacco_account.clone(),

@@ -5,7 +5,7 @@ use sacco_ledger_program::{
     add_member::add_member, post_period_summary::post_period_summary,
     record_deposit::record_deposit, register_sacco::register_sacco, verify_sacco::verify_sacco,
 };
-use sacco_ledger_core::{DepositType, PeriodSummary, Sacco};
+use sacco_ledger_core::{DepositType, PeriodSummary};
 
 fn blank_account(id: u8) -> AccountWithMetadata {
     AccountWithMetadata {

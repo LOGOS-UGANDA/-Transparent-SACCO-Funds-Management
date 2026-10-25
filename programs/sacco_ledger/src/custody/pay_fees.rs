@@ -8,6 +8,7 @@ use token_core::TokenHolding;
 /// Lock a payment into the institution vault and allocate amounts across active categories.
 ///
 /// Returns state diffs plus a chained `Token::Transfer` (payer holding → vault).
+#[allow(clippy::too_many_arguments)]
 pub fn pay_fees(
     config_account: AccountWithMetadata,
     mut institution_account: AccountWithMetadata,

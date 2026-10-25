@@ -1,4 +1,4 @@
-use sacco_ledger_core::{compute_config_pda, ProgramConfig};
+use sacco_ledger_core::custody::{compute_config_pda, ProgramConfig};
 use nssa_core::{
     account::{Account, AccountId, AccountWithMetadata, BalanceDiff},
     program::AccountStateDiff,

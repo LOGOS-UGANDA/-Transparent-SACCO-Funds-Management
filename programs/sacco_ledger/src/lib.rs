@@ -4,6 +4,7 @@
 //! Custody design: repository `docs/custody.md`.
 
 pub use sacco_ledger_core as core;
+pub use sacco_ledger_core::custody;
 
 pub mod add_approver;
 pub mod approve_release;

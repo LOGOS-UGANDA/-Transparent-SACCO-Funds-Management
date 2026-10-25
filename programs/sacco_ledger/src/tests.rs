@@ -1,5 +1,5 @@
 use crate::register_institution::register_institution;
-use sacco_ledger_core::{Institution, InstitutionType};
+use sacco_ledger_core::custody::{Institution, InstitutionType};
 use nssa_core::account::{Account, AccountId, AccountWithMetadata};
 
 fn blank_account(id: u8) -> AccountWithMetadata {

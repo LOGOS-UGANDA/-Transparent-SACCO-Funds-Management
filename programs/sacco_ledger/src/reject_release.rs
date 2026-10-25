@@ -1,4 +1,4 @@
-use sacco_ledger_core::{Institution, ReleaseRequest, ReleaseStatus};
+use sacco_ledger_core::custody::{Institution, ReleaseRequest, ReleaseStatus};
 use nssa_core::{
     account::{AccountWithMetadata, BalanceDiff},
     program::AccountStateDiff,

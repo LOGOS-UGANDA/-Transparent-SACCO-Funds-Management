@@ -43,4 +43,4 @@ jobs:
 
       - name: Clippy
         working-directory: programs
-        run: RISC0_DEV_MODE=1 cargo clippy --workspace --all-targets -- -D warnings
+        run: RISC0_DEV_MODE=1 RISC0_SKIP_BUILD=1 cargo clippy --workspace --all-targets -- -D warnings

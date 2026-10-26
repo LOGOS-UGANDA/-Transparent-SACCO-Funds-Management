@@ -1,0 +1,23 @@
+[package]
+name = "sacco_ledger-guest"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[profile.release]
+debug = 0
+strip = "symbols"
+
+[lints.rust]
+rust_2018_idioms = { level = "deny", priority = -1 }
+unsafe_code = "deny"
+
+[[bin]]
+name = "sacco_ledger"
+path = "src/bin/sacco_ledger.rs"
+
+[dependencies]
+nssa_core = { git = "https://github.com/logos-blockchain/logos-execution-zone.git", tag = "v0.3.1", package = "lee_core" }
+sacco_ledger_program = { path = "../..", package = "sacco_ledger_program" }
+risc0-zkvm = { version = "=3.0.5", default-features = false }

@@ -106,6 +106,44 @@ pub fn apply(effect: SaccoEffect, pre: &[u8]) -> Option<Vec<u8>> {
             }
             Some(encode(&sacco))
         }
+        SaccoEffect::AuthorizeProposal { required_approvals } => {
+            let sacco = decode_sacco(pre);
+            assert!(sacco.is_verified, "Sacco is not verified");
+            assert_eq!(
+                required_approvals, sacco.required_approvals,
+                "Approver threshold does not match the SACCO configuration"
+            );
+            None
+        }
+        SaccoEffect::AuthorizeApprover { approver } => {
+            let sacco = decode_sacco(pre);
+            assert!(sacco.is_verified, "Sacco is not verified");
+            assert!(is_approver(&sacco, &approver), "Not a SACCO approver");
+            None
+        }
+        SaccoEffect::DisburseLoan {
+            approver,
+            principal,
+        } => {
+            let mut sacco = decode_sacco(pre);
+            assert!(sacco.is_verified, "Sacco is not verified");
+            assert!(is_approver(&sacco, &approver), "Not a SACCO approver");
+            sacco.total_loans_disbursed = sacco
+                .total_loans_disbursed
+                .checked_add(principal)
+                .expect("loans disbursed overflow");
+            Some(encode(&sacco))
+        }
+        SaccoEffect::RecordRepayment { approver, amount } => {
+            let mut sacco = decode_sacco(pre);
+            assert!(sacco.is_verified, "Sacco is not verified");
+            assert!(is_approver(&sacco, &approver), "Not a SACCO approver");
+            sacco.total_loans_repaid = sacco
+                .total_loans_repaid
+                .checked_add(amount)
+                .expect("loans repaid overflow");
+            Some(encode(&sacco))
+        }
     }
 }
 

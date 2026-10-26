@@ -156,6 +156,8 @@ pub struct Loan {
     pub evidence_cid: Option<String>,
     /// Accumulated repayments; capped at principal.
     pub repaid_amount: u128,
+    /// Multi-sig threshold pinned when the loan was applied.
+    pub required_approvals: u8,
 }
 
 /// A SACCO expense: proposed, multi-sig approved, executed by recording the off-chain release.
@@ -267,7 +269,12 @@ pub enum Instruction {
     /// - Member account (mut)
     /// - Loan account (uninitialized, authorized)
     /// - Member identity account (signer)
-    ApplyLoan { amount: u128, purpose: String },
+    ApplyLoan {
+        amount: u128,
+        purpose: String,
+        /// The threshold the SACCO had when the loan was applied.
+        required_approvals: u8,
+    },
 
     /// Committee multi-sig approval of a loan.
     ///
@@ -292,7 +299,11 @@ pub enum Instruction {
     /// - Member account (mut)
     /// - Loan account (mut)
     /// - Approver account (signer)
-    DisburseLoan { evidence_cid: String },
+    DisburseLoan {
+        evidence_cid: String,
+        /// The loan principal, re-asserted so the owning shard can validate it.
+        principal: u128,
+    },
 
     /// Record a loan repayment (off-chain transfer) against a disbursed loan.
     ///

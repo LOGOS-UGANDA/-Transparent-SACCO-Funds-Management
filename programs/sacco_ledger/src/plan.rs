@@ -1,7 +1,9 @@
 //! Instruction planning: assert what metadata can prove, then name one effect per shard.
 
 use nssa_core::program::{AccountMeta, Plan, PlanInput};
-use sacco_ledger_core::effect::{ConfigEffect, DepositEffect, Effect, MemberEffect, SaccoEffect};
+use sacco_ledger_core::effect::{
+    ConfigEffect, DepositEffect, Effect, LoanEffect, MemberEffect, SaccoEffect,
+};
 use sacco_ledger_core::{Deposit, Instruction};
 
 /// The registry layout version this build writes and expects.
@@ -139,6 +141,103 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
                 .expect("ConfirmDeposit requires deposit and member");
             let member = signer(member, "Member must authorize confirmation");
             plan.effect(deposit, &Effect::Deposit(DepositEffect::Confirm { member }));
+        }
+        Instruction::ApplyLoan {
+            amount,
+            purpose,
+            required_approvals,
+        } => {
+            let [sacco, member, loan, member_signer] =
+                <&[_; 4]>::try_from(input.accounts.as_slice())
+                    .expect("ApplyLoan requires sacco, member, loan and member signer");
+            assert!(loan.is_authorized, "Loan account must be authorized");
+            let signer = signer(member_signer, "Member must authorize the application");
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::AuthorizeProposal { required_approvals }),
+            );
+            plan.effect(
+                member,
+                &Effect::Member(MemberEffect::AttachLoan {
+                    sacco: sacco.account_id,
+                    loan: loan.account_id,
+                    signer,
+                }),
+            );
+            plan.effect(
+                loan,
+                &Effect::Loan(LoanEffect::Init {
+                    sacco: sacco.account_id,
+                    member: member.account_id,
+                    principal: amount,
+                    purpose,
+                    required_approvals,
+                }),
+            );
+        }
+        Instruction::ApproveLoan => {
+            let [sacco, loan, approver] = <&[_; 3]>::try_from(input.accounts.as_slice())
+                .expect("ApproveLoan requires sacco, loan and approver");
+            let approver = signer(approver, "Approver must authorize");
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::AuthorizeApprover { approver }),
+            );
+            plan.effect(loan, &Effect::Loan(LoanEffect::Approve { approver }));
+        }
+        Instruction::RejectLoan => {
+            let [sacco, loan, approver] = <&[_; 3]>::try_from(input.accounts.as_slice())
+                .expect("RejectLoan requires sacco, loan and approver");
+            let approver = signer(approver, "Approver must authorize");
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::AuthorizeApprover { approver }),
+            );
+            plan.effect(loan, &Effect::Loan(LoanEffect::Reject { approver }));
+        }
+        Instruction::DisburseLoan {
+            evidence_cid,
+            principal,
+        } => {
+            let [sacco, _member, loan, approver] = <&[_; 4]>::try_from(input.accounts.as_slice())
+                .expect("DisburseLoan requires sacco, member, loan and approver");
+            let approver = signer(approver, "Approver must authorize");
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::DisburseLoan {
+                    approver,
+                    principal,
+                }),
+            );
+            plan.effect(
+                loan,
+                &Effect::Loan(LoanEffect::Disburse {
+                    evidence_cid,
+                    principal,
+                }),
+            );
+        }
+        Instruction::RecordRepayment {
+            loan,
+            amount,
+            reference,
+        } => {
+            let [sacco, _member, loan_account, approver] =
+                <&[_; 4]>::try_from(input.accounts.as_slice())
+                    .expect("RecordRepayment requires sacco, member, loan and approver");
+            assert_eq!(
+                loan_account.account_id, loan,
+                "Loan account does not match the loan id argument"
+            );
+            let approver = signer(approver, "Approver must authorize");
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::RecordRepayment { approver, amount }),
+            );
+            plan.effect(
+                loan_account,
+                &Effect::Loan(LoanEffect::Repay { amount, reference }),
+            );
         }
         other => panic!("instruction not ported yet: {other:?}"),
     }

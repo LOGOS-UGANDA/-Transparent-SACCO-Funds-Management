@@ -2,5 +2,6 @@
 
 pub mod config;
 pub mod deposit;
+pub mod loan;
 pub mod member;
 pub mod sacco;

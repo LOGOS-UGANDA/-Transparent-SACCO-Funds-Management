@@ -40,6 +40,23 @@ pub fn apply(effect: MemberEffect, pre: &[u8]) -> Option<Vec<u8>> {
             }
             Some(encode(&member))
         }
+        MemberEffect::AttachLoan {
+            sacco,
+            loan,
+            signer,
+        } => {
+            let mut member = decode_member(pre, sacco);
+            assert_eq!(
+                member.identity, signer,
+                "Only the member can apply for their loan"
+            );
+            assert!(
+                !member.loan_ids.contains(&loan),
+                "Loan already attached to this member"
+            );
+            member.loan_ids.push(loan);
+            Some(encode(&member))
+        }
     }
 }
 

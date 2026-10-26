@@ -6,7 +6,7 @@
 
 use std::collections::BTreeMap;
 
-use borsh::BorshDeserialize;
+use borsh::{BorshDeserialize, BorshSerialize};
 use nssa_core::account::AccountId;
 use nssa_core::program::{AccountMeta, PlanInput};
 use sacco_ledger_core::codec::{decode, encode};
@@ -62,6 +62,44 @@ pub fn add_verified_member(ledger: &mut Ledger, member: AccountId) {
     ledger.add_member(aid(1), aid(2), member);
 }
 
+/// A verified SACCO with approvers `aid(2)` and `aid(3)` and threshold 2.
+pub fn two_approver_sacco(ledger: &mut Ledger) -> AccountId {
+    verified_sacco(ledger);
+    add_verified_member(ledger, aid(6));
+    ledger.set_approvers(aid(1), &[aid(2), aid(3)], 2);
+    aid(1)
+}
+
+/// Applies for a 200_000 loan for member `aid(6)`, threshold 2.
+pub fn applied_loan(ledger: &mut Ledger, loan: AccountId) {
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(loan), meta(aid(6))],
+        Instruction::ApplyLoan {
+            amount: 200_000,
+            purpose: "school fees".into(),
+            required_approvals: 2,
+        },
+    );
+}
+
+/// A fully disbursed 200_000 loan.
+pub fn disbursed_loan(ledger: &mut Ledger, loan: AccountId) {
+    applied_loan(ledger, loan);
+    for approver in [aid(2), aid(3)] {
+        ledger.execute(
+            &[meta(aid(1)), meta(loan), meta(approver)],
+            Instruction::ApproveLoan,
+        );
+    }
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(loan), meta(aid(2))],
+        Instruction::DisburseLoan {
+            evidence_cid: "bafy-disbursement".into(),
+            principal: 200_000,
+        },
+    );
+}
+
 /// Shard state after executing instructions.
 #[derive(Default)]
 pub struct Ledger {
@@ -72,6 +110,19 @@ impl Ledger {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Overwrites a shard directly, for seeding governance configuration.
+    pub fn put<T: BorshSerialize>(&mut self, id: AccountId, value: &T) {
+        self.shards.insert(id, encode(value));
+    }
+
+    /// Sets the SACCO's approver list and threshold.
+    pub fn set_approvers(&mut self, sacco: AccountId, approvers: &[AccountId], threshold: u8) {
+        let mut state = self.sacco(sacco);
+        state.approvers = approvers.to_vec();
+        state.required_approvals = threshold;
+        self.put(sacco, &state);
     }
 
     /// Runs `plan`, then applies every emitted effect, exactly as the sequencer does.

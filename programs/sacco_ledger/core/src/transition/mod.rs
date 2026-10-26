@@ -6,3 +6,4 @@ pub mod expense;
 pub mod loan;
 pub mod member;
 pub mod sacco;
+pub mod summary;

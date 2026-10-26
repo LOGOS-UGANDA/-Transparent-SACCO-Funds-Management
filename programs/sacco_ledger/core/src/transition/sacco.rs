@@ -169,6 +169,16 @@ pub fn apply(effect: SaccoEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 .expect("expense total overflow");
             Some(encode(&sacco))
         }
+        SaccoEffect::HoldTotals { totals, poster } => {
+            let sacco = decode_sacco(pre);
+            assert!(is_approver(&sacco, &poster), "Not a SACCO approver");
+            assert_eq!(
+                totals,
+                crate::Totals::of(&sacco),
+                "Totals do not match the SACCO's live totals"
+            );
+            None
+        }
     }
 }
 

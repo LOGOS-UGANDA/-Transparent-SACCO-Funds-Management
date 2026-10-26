@@ -3,6 +3,7 @@
 use nssa_core::program::{AccountMeta, Plan, PlanInput};
 use sacco_ledger_core::effect::{
     ConfigEffect, DepositEffect, Effect, ExpenseEffect, LoanEffect, MemberEffect, SaccoEffect,
+    SummaryEffect,
 };
 use sacco_ledger_core::{Deposit, Instruction};
 
@@ -314,7 +315,24 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
                 }),
             );
         }
-        other => panic!("instruction not ported yet: {other:?}"),
+        Instruction::PostPeriodSummary { label, totals } => {
+            let [sacco, summary, poster] = <&[_; 3]>::try_from(input.accounts.as_slice())
+                .expect("PostPeriodSummary requires sacco, summary and poster");
+            assert!(summary.is_authorized, "Summary account must be authorized");
+            let poster = signer(poster, "Poster must authorize");
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::HoldTotals { totals, poster }),
+            );
+            plan.effect(
+                summary,
+                &Effect::Summary(SummaryEffect::Init {
+                    sacco: sacco.account_id,
+                    label,
+                    totals,
+                }),
+            );
+        }
     }
     plan
 }

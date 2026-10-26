@@ -13,5 +13,6 @@ pub fn apply(effect: Effect, pre: &[u8]) -> Option<Vec<u8>> {
         Effect::Deposit(effect) => transition::deposit::apply(effect, pre),
         Effect::Loan(effect) => transition::loan::apply(effect, pre),
         Effect::Expense(effect) => transition::expense::apply(effect, pre),
+        Effect::Summary(effect) => transition::summary::apply(effect, pre),
     }
 }

@@ -191,6 +191,57 @@ pub struct PeriodSummary {
     pub expenses: u128,
 }
 
+/// The SACCO's five public aggregate totals, as one portable value.
+#[derive(
+    Debug,
+    Default,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    BorshSerialize,
+    BorshDeserialize,
+)]
+pub struct Totals {
+    pub deposits_savings: u128,
+    pub deposits_share_capital: u128,
+    pub loans_disbursed: u128,
+    pub loans_repaid: u128,
+    pub expenses: u128,
+}
+
+impl Totals {
+    /// Reads the totals out of a SACCO account.
+    #[must_use]
+    pub fn of(sacco: &Sacco) -> Self {
+        Self {
+            deposits_savings: sacco.total_deposits_savings,
+            deposits_share_capital: sacco.total_deposits_share_capital,
+            loans_disbursed: sacco.total_loans_disbursed,
+            loans_repaid: sacco.total_loans_repaid,
+            expenses: sacco.total_expenses,
+        }
+    }
+}
+
+impl PeriodSummary {
+    /// A snapshot of `totals` for `sacco` under `label`.
+    #[must_use]
+    pub fn new(sacco_id: AccountId, label: String, totals: Totals) -> Self {
+        Self {
+            sacco_id,
+            label,
+            deposits_savings: totals.deposits_savings,
+            deposits_share_capital: totals.deposits_share_capital,
+            loans_disbursed: totals.loans_disbursed,
+            loans_repaid: totals.loans_repaid,
+            expenses: totals.expenses,
+        }
+    }
+}
+
 /// SACCO ledger instructions. Account lists are documented per variant; handlers live
 /// in `sacco_ledger_program`. The attestation model: value never moves on chain —
 /// instructions record and approve off-chain money events.
@@ -368,7 +419,11 @@ pub enum Instruction {
     /// - Sacco account
     /// - Period summary account (uninitialized, authorized)
     /// - Approver account (signer)
-    PostPeriodSummary { label: String },
+    PostPeriodSummary {
+        label: String,
+        /// The totals snapshot, re-asserted so the SACCO shard can validate it.
+        totals: Totals,
+    },
 }
 
 /// Seed for the singleton config PDA.

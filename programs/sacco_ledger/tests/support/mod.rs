@@ -12,7 +12,7 @@ use nssa_core::program::{AccountMeta, PlanInput};
 use sacco_ledger_core::codec::{decode, encode};
 use sacco_ledger_core::effect::Effect;
 use sacco_ledger_core::{
-    Deposit, Expense, Instruction, Loan, Member, PeriodSummary, ProgramConfig, Sacco,
+    Deposit, Expense, Instruction, Loan, Member, PeriodSummary, ProgramConfig, Sacco, Totals,
 };
 use sacco_ledger_program::{apply, plan};
 
@@ -98,6 +98,11 @@ pub fn disbursed_loan(ledger: &mut Ledger, loan: AccountId) {
             principal: 200_000,
         },
     );
+}
+
+/// The SACCO's live totals, as a client would read them.
+pub fn totals(ledger: &Ledger) -> Totals {
+    Totals::of(&ledger.sacco(aid(1)))
 }
 
 /// Proposes a 120_000 expense on the two-approver SACCO.

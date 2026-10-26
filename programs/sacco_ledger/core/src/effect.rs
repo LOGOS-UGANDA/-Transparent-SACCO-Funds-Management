@@ -2,7 +2,7 @@
 
 use borsh::{BorshDeserialize, BorshSerialize};
 
-use crate::{AccountId, Deposit, DepositType, ProgramConfigVersion};
+use crate::{AccountId, Deposit, DepositType, ProgramConfigVersion, Totals};
 
 /// Every effect a `sacco_ledger` instruction can emit.
 #[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
@@ -13,6 +13,7 @@ pub enum Effect {
     Deposit(DepositEffect),
     Loan(LoanEffect),
     Expense(ExpenseEffect),
+    Summary(SummaryEffect),
 }
 
 /// Effects on the singleton config shard.
@@ -72,6 +73,10 @@ pub enum SaccoEffect {
     ExecuteExpense {
         approver: AccountId,
         amount: u128,
+    },
+    HoldTotals {
+        totals: Totals,
+        poster: AccountId,
     },
 }
 
@@ -147,5 +152,15 @@ pub enum ExpenseEffect {
     Execute {
         executed_evidence: String,
         amount: u128,
+    },
+}
+
+/// Effects on a period-summary shard.
+#[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
+pub enum SummaryEffect {
+    Init {
+        sacco: AccountId,
+        label: String,
+        totals: Totals,
     },
 }

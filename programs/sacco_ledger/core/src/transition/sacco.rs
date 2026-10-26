@@ -144,6 +144,31 @@ pub fn apply(effect: SaccoEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 .expect("loans repaid overflow");
             Some(encode(&sacco))
         }
+        SaccoEffect::ProposeExpense {
+            proposer,
+            amount,
+            required_approvals,
+        } => {
+            let sacco = decode_sacco(pre);
+            assert!(sacco.is_verified, "Sacco is not verified");
+            assert!(is_approver(&sacco, &proposer), "Not a SACCO approver");
+            assert!(amount > 0, "Expense amount must be greater than 0");
+            assert_eq!(
+                required_approvals, sacco.required_approvals,
+                "Approver threshold does not match the SACCO configuration"
+            );
+            None
+        }
+        SaccoEffect::ExecuteExpense { approver, amount } => {
+            let mut sacco = decode_sacco(pre);
+            assert!(sacco.is_verified, "Sacco is not verified");
+            assert!(is_approver(&sacco, &approver), "Not a SACCO approver");
+            sacco.total_expenses = sacco
+                .total_expenses
+                .checked_add(amount)
+                .expect("expense total overflow");
+            Some(encode(&sacco))
+        }
     }
 }
 

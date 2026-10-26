@@ -100,6 +100,19 @@ pub fn disbursed_loan(ledger: &mut Ledger, loan: AccountId) {
     );
 }
 
+/// Proposes a 120_000 expense on the two-approver SACCO.
+pub fn proposed_expense(ledger: &mut Ledger, expense: AccountId) {
+    ledger.execute(
+        &[meta(aid(1)), meta(expense), meta(aid(2))],
+        Instruction::ProposeExpense {
+            amount: 120_000,
+            purpose: "office chairs".into(),
+            evidence_cid: "bafy-purpose".into(),
+            required_approvals: 2,
+        },
+    );
+}
+
 /// Shard state after executing instructions.
 #[derive(Default)]
 pub struct Ledger {

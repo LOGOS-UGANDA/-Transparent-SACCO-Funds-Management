@@ -12,6 +12,7 @@ pub enum Effect {
     Member(MemberEffect),
     Deposit(DepositEffect),
     Loan(LoanEffect),
+    Expense(ExpenseEffect),
 }
 
 /// Effects on the singleton config shard.
@@ -60,6 +61,15 @@ pub enum SaccoEffect {
         principal: u128,
     },
     RecordRepayment {
+        approver: AccountId,
+        amount: u128,
+    },
+    ProposeExpense {
+        proposer: AccountId,
+        amount: u128,
+        required_approvals: u8,
+    },
+    ExecuteExpense {
         approver: AccountId,
         amount: u128,
     },
@@ -114,5 +124,28 @@ pub enum LoanEffect {
     Repay {
         amount: u128,
         reference: String,
+    },
+}
+
+/// Effects on an expense shard.
+#[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
+pub enum ExpenseEffect {
+    Init {
+        sacco: AccountId,
+        amount: u128,
+        purpose: String,
+        evidence_cid: String,
+        requested_by: AccountId,
+        required_approvals: u8,
+    },
+    Approve {
+        approver: AccountId,
+    },
+    Reject {
+        approver: AccountId,
+    },
+    Execute {
+        executed_evidence: String,
+        amount: u128,
     },
 }

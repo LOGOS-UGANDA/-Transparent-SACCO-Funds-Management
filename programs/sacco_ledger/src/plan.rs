@@ -2,7 +2,7 @@
 
 use nssa_core::program::{AccountMeta, Plan, PlanInput};
 use sacco_ledger_core::effect::{
-    ConfigEffect, DepositEffect, Effect, LoanEffect, MemberEffect, SaccoEffect,
+    ConfigEffect, DepositEffect, Effect, ExpenseEffect, LoanEffect, MemberEffect, SaccoEffect,
 };
 use sacco_ledger_core::{Deposit, Instruction};
 
@@ -237,6 +237,81 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
             plan.effect(
                 loan_account,
                 &Effect::Loan(LoanEffect::Repay { amount, reference }),
+            );
+        }
+        Instruction::ProposeExpense {
+            amount,
+            purpose,
+            evidence_cid,
+            required_approvals,
+        } => {
+            let [sacco, expense, proposer] = <&[_; 3]>::try_from(input.accounts.as_slice())
+                .expect("ProposeExpense requires sacco, expense and proposer");
+            assert!(expense.is_authorized, "Expense account must be authorized");
+            let proposer = signer(proposer, "Proposer must authorize");
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::ProposeExpense {
+                    proposer,
+                    amount,
+                    required_approvals,
+                }),
+            );
+            plan.effect(
+                expense,
+                &Effect::Expense(ExpenseEffect::Init {
+                    sacco: sacco.account_id,
+                    amount,
+                    purpose,
+                    evidence_cid,
+                    requested_by: proposer,
+                    required_approvals,
+                }),
+            );
+        }
+        Instruction::ApproveExpense => {
+            let [sacco, expense, approver] = <&[_; 3]>::try_from(input.accounts.as_slice())
+                .expect("ApproveExpense requires sacco, expense and approver");
+            let approver = signer(approver, "Approver must authorize");
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::AuthorizeApprover { approver }),
+            );
+            plan.effect(
+                expense,
+                &Effect::Expense(ExpenseEffect::Approve { approver }),
+            );
+        }
+        Instruction::RejectExpense => {
+            let [sacco, expense, approver] = <&[_; 3]>::try_from(input.accounts.as_slice())
+                .expect("RejectExpense requires sacco, expense and approver");
+            let approver = signer(approver, "Approver must authorize");
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::AuthorizeApprover { approver }),
+            );
+            plan.effect(
+                expense,
+                &Effect::Expense(ExpenseEffect::Reject { approver }),
+            );
+        }
+        Instruction::ExecuteExpense {
+            executed_evidence,
+            amount,
+        } => {
+            let [sacco, expense, approver] = <&[_; 3]>::try_from(input.accounts.as_slice())
+                .expect("ExecuteExpense requires sacco, expense and approver");
+            let approver = signer(approver, "Approver must authorize");
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::ExecuteExpense { approver, amount }),
+            );
+            plan.effect(
+                expense,
+                &Effect::Expense(ExpenseEffect::Execute {
+                    executed_evidence,
+                    amount,
+                }),
             );
         }
         other => panic!("instruction not ported yet: {other:?}"),

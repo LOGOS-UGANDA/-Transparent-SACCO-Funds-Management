@@ -174,6 +174,8 @@ pub struct Expense {
     pub rejectors: Vec<AccountId>,
     /// Evidence recorded at execution: proof the off-chain payment happened.
     pub executed_evidence: Option<String>,
+    /// Multi-sig threshold pinned when the expense was proposed.
+    pub required_approvals: u8,
 }
 
 /// Period snapshot of SACCO totals, posted by the treasurer and public for members.
@@ -328,6 +330,8 @@ pub enum Instruction {
         amount: u128,
         purpose: String,
         evidence_cid: String,
+        /// The threshold the SACCO had when the expense was proposed.
+        required_approvals: u8,
     },
 
     /// Committee multi-sig approval of a proposed expense.
@@ -352,7 +356,11 @@ pub enum Instruction {
     /// - Sacco account (mut)
     /// - Expense account (mut)
     /// - Approver account (signer)
-    ExecuteExpense { executed_evidence: String },
+    ExecuteExpense {
+        executed_evidence: String,
+        /// The expense amount, re-asserted so the owning shard can validate it.
+        amount: u128,
+    },
 
     /// Post a period summary snapshot of SACCO totals (public for members).
     ///

@@ -5,10 +5,9 @@
   "type": "core",
   "interface": "universal",
   "category": "finance",
-  "description": "Core module for Transparent SACCO — fee locking, verification, and multi-sig release APIs for the LEZ fee_transparency program.",
+  "description": "Core module for Transparent SACCO \u2014 wires the sacco_ui views to the sacco_ledger LEZ program: typed deposits, loan lifecycle, multi-sig expenses, period summaries.",
   "main": "sacco_core_plugin",
   "dependencies": [],
-
   "nix": {
     "packages": {
       "build": [],

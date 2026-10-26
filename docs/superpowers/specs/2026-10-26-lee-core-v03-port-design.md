@@ -97,11 +97,11 @@ Every variant carries only what its own transition needs. The full set, by shard
 | `AddSupervisor { admin, supervisor }` | same for `supervisory_committee` |
 | `AddMember { admin, identity }` | assert `sacco.admin == admin`; push to `member_ids`, reject duplicates |
 | `RecordDeposit { recorder, amount, deposit_type }` | assert verified, recorder is approver, amount > 0; add to the matching total |
-| `RequireVerified` | inspect-only (`None`): assert `is_verified` (the SACCO shard stays unchanged for instructions that only read it) |
+| `AuthorizeProposal { required_approvals }` | inspect-only (`None`): assert verified and that the argument equals the live `required_approvals`, pinning a proposal's governance bar |
 | `AuthorizeApprover { approver }` | inspect-only (`None`): assert verified and approver membership |
 | `DisburseLoan { approver, principal }` | assert verified + approver; add to `total_loans_disbursed` |
 | `RecordRepayment { approver, amount }` | assert verified + approver; add to `total_loans_repaid` |
-| `ProposeExpense { proposer, amount }` | assert verified + approver + amount > 0 |
+| `ProposeExpense { proposer, amount, required_approvals }` | assert verified + approver + amount > 0 + threshold matches the live config |
 | `ExecuteExpense { approver, amount }` | assert verified + approver; add to `total_expenses` |
 | `HoldTotals(Totals)` | inspect-only (`None`): assert the five live totals equal the snapshot |
 
@@ -113,13 +113,14 @@ today.
 **DepositEffect**: `Init(Deposit)`, `Confirm { member }` (asserts the confirming signer is the
 member identity, and the deposit is not already confirmed).
 
-**LoanEffect**: `Init { sacco, member, principal, purpose }`, `Approve { approver }`,
-`Reject { approver }`, `Disburse { evidence_cid }`, `Repay { amount, reference }` — status
-transitions and the repayment cap (`repaid_amount + amount <= principal`) live here, since the loan
-shard owns them.
+**LoanEffect**: `Init { sacco, member, principal, purpose, required_approvals }`,
+`Approve { approver }`, `Reject { approver }`, `Disburse { evidence_cid, principal }`,
+`Repay { amount, reference }` — status transitions and the repayment cap (`repaid_amount + amount <=
+principal`) live here, since the loan shard owns them. Approval compares against the loan's pinned
+`required_approvals`, not the live SACCO config.
 
-**ExpenseEffect**: `Init { sacco, amount, purpose, evidence_cid, requested_by }`,
-`Approve { approver }`, `Reject { approver }`, `Execute { executed_evidence }`.
+**ExpenseEffect**: `Init { sacco, amount, purpose, evidence_cid, requested_by, required_approvals }`,
+`Approve { approver }`, `Reject { approver }`, `Execute { executed_evidence, amount }`.
 
 **SummaryEffect**: `Init { sacco, label, totals }`.
 
@@ -138,7 +139,7 @@ change lives on the loan/expense shard. A separate inspect effect keeps the rule
 | `AddMember` | Sacco(AddMember), Member(Init) |
 | `RecordDeposit` | Sacco(RecordDeposit), Member(RecordDeposit), Deposit(Init) |
 | `ConfirmDeposit` | Deposit(Confirm) |
-| `ApplyLoan` | Sacco(RequireVerified), Member(AttachLoan), Loan(Init) |
+| `ApplyLoan` | Sacco(AuthorizeProposal), Member(AttachLoan), Loan(Init) |
 | `ApproveLoan` | Sacco(AuthorizeApprover), Loan(Approve) |
 | `RejectLoan` | Sacco(AuthorizeApprover), Loan(Reject) |
 | `DisburseLoan` | Sacco(DisburseLoan), Loan(Disburse) |
@@ -152,20 +153,39 @@ change lives on the loan/expense shard. A separate inspect effect keeps the rule
 Account order and the signer/writable flags are the same as the current IDL, with one exception
 below.
 
-## The `PostPeriodSummary` ABI change
+## Cross-shard values and the resulting ABI changes
 
-Today the handler copies the SACCO's live totals into the new summary account. In v0.3 neither side
-can read the other's shard, so the totals must arrive as an argument. The client reads the public
-SACCO account and passes:
+Some rules need a value that lives on a different shard from the one they change. In v0.3 the plan
+cannot read data and an effect's apply cannot read sibling shards, so each such value takes one of
+two shapes:
+
+1. **Pinned at creation.** `Loan` and `Expense` gain `required_approvals: u8`, captured when the
+   proposal is made. `ApplyLoan`/`ProposeExpense` take it as an argument; `Sacco(AuthorizeProposal)`
+   / `Sacco(ProposeExpense)` assert it equals the live SACCO config, so a proposal cannot pin a
+   weaker bar. Later approvals compare against the pinned value, so a mid-flight governance change
+   cannot lower the bar of an open proposal.
+2. **Passed as an argument and mirrored by the owning shard.** `DisburseLoan` takes `principal`,
+   `ExecuteExpense` takes `amount`, `PostPeriodSummary` takes `totals`. The shard that owns the
+   record asserts the argument matches its own data (loan principal, expense amount) or validates it
+   against live data (SACCO totals via `HoldTotals`), and the SACCO shard uses it to update the
+   aggregate.
+
+Instruction signature changes, all additive:
 
 ```rust
-PostPeriodSummary { label: String, totals: Totals }   // Totals: 5 x u128
+ApplyLoan        { amount, purpose, required_approvals: u8 }
+ProposeExpense   { amount, purpose, evidence_cid, required_approvals: u8 }
+DisburseLoan     { evidence_cid, principal: u128 }
+ExecuteExpense   { executed_evidence, amount: u128 }
+PostPeriodSummary{ label, totals: Totals }        // Totals: 5 x u128
 ```
 
-`plan` emits `Sacco(HoldTotals(totals))` (read-only; panics unless the live totals match) and
-`Summary(Init { .. })` writing the snapshot. This mirrors upstream's `InboxHolds` guard in the fee
-program: the writer writes, the owner-shard validates. The IDL entry gains the `totals` argument;
-`sacco_core` (#5) will need the same argument on its method in a later slice.
+Nothing is deployed, so no stored data or client call needs migrating. The IDL records the new
+arguments; `sacco_core` (#5) gains them on its methods in a later slice.
+
+`ApplyLoan` still needs a verified-SACCO check, which `AuthorizeProposal` provides, and
+`ProposeExpense` folds its threshold check into the effect that also mutates the SACCO, so no shard
+ever receives two effects from one instruction.
 
 ## IDL
 

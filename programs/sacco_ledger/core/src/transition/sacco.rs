@@ -34,6 +34,10 @@ pub fn apply(effect: SaccoEffect, pre: &[u8]) -> Option<Vec<u8>> {
             let mut sacco = decode_sacco(pre);
             assert!(sacco.is_active, "Sacco must be active");
             assert_eq!(sacco.admin, admin, "Only the SACCO admin can verify in v1");
+            assert!(
+                sacco.required_approvals >= 2,
+                "Approval threshold must be at least 2 before verification"
+            );
             sacco.is_verified = true;
             Some(encode(&sacco))
         }

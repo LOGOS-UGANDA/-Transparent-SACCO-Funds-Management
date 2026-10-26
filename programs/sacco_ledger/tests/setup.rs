@@ -87,8 +87,28 @@ fn a_foreign_shard_is_refused() {
 fn verify_sacco_by_admin() {
     let mut ledger = Ledger::new();
     let (sacco, admin) = registered(&mut ledger);
+    for approver in [aid(3), aid(4)] {
+        ledger.execute(
+            &[meta(sacco), meta(admin)],
+            Instruction::AddApprover { approver },
+        );
+    }
+    ledger.execute(
+        &[meta(sacco), meta(admin)],
+        Instruction::SetRequiredApprovals {
+            required_approvals: 2,
+        },
+    );
     ledger.execute(&[meta(sacco), meta(admin)], Instruction::VerifySacco);
     assert!(ledger.sacco(sacco).is_verified);
+}
+
+#[test]
+#[should_panic(expected = "Approval threshold must be at least 2 before verification")]
+fn verify_sacco_requires_a_multi_approver_threshold() {
+    let mut ledger = Ledger::new();
+    let (sacco, admin) = registered(&mut ledger);
+    ledger.execute(&[meta(sacco), meta(admin)], Instruction::VerifySacco);
 }
 
 #[test]

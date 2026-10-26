@@ -42,11 +42,11 @@ Approval thresholds are pinned into `Loan` / `Expense` when they are created and
 validated against the live SACCO config at that moment, because the approval
 transition runs in a different shard from the config.
 
-New SACCOs start with a threshold of one for setup. Before presenting the
-ledger as multi-signature, the admin must add at least two more approvers and
-set the threshold to at least two. The upper bound leaves enough approvers to
-approve an expense after excluding its proposer. Any non-proposer approver
-rejection is an immediate veto. Period summary labels must use the canonical
+New SACCOs start with a threshold of one for setup. Verification is blocked
+until the admin adds at least two more approvers and sets the threshold to at
+least two. The upper bound leaves enough approvers to approve an expense after
+excluding its proposer. Any non-proposer approver rejection is an immediate
+veto. Period summary labels must use the canonical
 `YYYY-MM` calendar-month format, and a month cannot be posted twice.
 To keep Borsh shard sizes bounded in this release, each SACCO supports at most
 128 members, 32 approvers and 32 supervisors, and each member can reference at
@@ -56,9 +56,10 @@ registry shards before these limits are raised.
 
 ## IDL
 
-Generated, not hand-maintained: `artifacts/sacco_ledger-idl.json` is rendered
-from the single instruction table in `idl/src/lib.rs`, and CI fails when the
-committed artifact is stale.
+The JSON artifact is generated from the hand-maintained instruction table in
+`idl/src/lib.rs`; it is not derived automatically from the Rust enum. CI fails
+when the committed artifact is stale, and tests compare the table with the enum
+and planner.
 
 ```bash
 cd programs

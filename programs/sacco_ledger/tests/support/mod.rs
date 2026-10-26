@@ -198,6 +198,18 @@ impl Ledger {
                 treasury: aid(9),
             },
         );
+        for approver in [aid(250), aid(251)] {
+            self.execute(
+                &[meta(sacco), meta(admin)],
+                Instruction::AddApprover { approver },
+            );
+        }
+        self.execute(
+            &[meta(sacco), meta(admin)],
+            Instruction::SetRequiredApprovals {
+                required_approvals: 2,
+            },
+        );
         self.execute(&[meta(sacco), meta(admin)], Instruction::VerifySacco);
     }
 

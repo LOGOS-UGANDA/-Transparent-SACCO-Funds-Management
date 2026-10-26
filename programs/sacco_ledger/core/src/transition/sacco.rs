@@ -27,11 +27,11 @@ pub fn apply(effect: SaccoEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 admin,
             )))
         }
-        SaccoEffect::Verify { registrar } => {
+        SaccoEffect::Verify { admin } => {
             let mut sacco = decode_sacco(pre);
             assert!(sacco.is_active, "Sacco must be active");
             assert_eq!(
-                sacco.admin, registrar,
+                sacco.admin, admin,
                 "Only the SACCO admin can verify in v1"
             );
             sacco.is_verified = true;
@@ -171,6 +171,7 @@ pub fn apply(effect: SaccoEffect, pre: &[u8]) -> Option<Vec<u8>> {
         }
         SaccoEffect::HoldTotals { totals, poster } => {
             let sacco = decode_sacco(pre);
+            assert!(sacco.is_verified, "Sacco is not verified");
             assert!(is_approver(&sacco, &poster), "Not a SACCO approver");
             assert_eq!(
                 totals,

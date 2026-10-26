@@ -5,6 +5,9 @@ use crate::effect::ExpenseEffect;
 use crate::{Expense, ExpenseStatus};
 
 /// Applies an expense effect to the expense shard.
+///
+/// Like the loan shard, every follow-up effect names the SACCO it belongs to
+/// and the shard refuses effects aimed at another SACCO's expense.
 #[must_use]
 pub fn apply(effect: ExpenseEffect, pre: &[u8]) -> Option<Vec<u8>> {
     match effect {
@@ -36,12 +39,20 @@ pub fn apply(effect: ExpenseEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 required_approvals,
             }))
         }
-        ExpenseEffect::Approve { approver } => {
+        ExpenseEffect::Approve { sacco, approver } => {
             let mut expense = decode_expense(pre);
+            assert_eq!(
+                expense.sacco_id, sacco,
+                "Expense belongs to a different SACCO"
+            );
             assert_eq!(
                 expense.status,
                 ExpenseStatus::Proposed,
                 "Expense is not proposed"
+            );
+            assert_ne!(
+                approver, expense.requested_by,
+                "Proposer cannot approve their own expense"
             );
             assert!(
                 !expense.approvers.contains(&approver),
@@ -57,8 +68,12 @@ pub fn apply(effect: ExpenseEffect, pre: &[u8]) -> Option<Vec<u8>> {
             }
             Some(encode(&expense))
         }
-        ExpenseEffect::Reject { approver } => {
+        ExpenseEffect::Reject { sacco, approver } => {
             let mut expense = decode_expense(pre);
+            assert_eq!(
+                expense.sacco_id, sacco,
+                "Expense belongs to a different SACCO"
+            );
             assert_eq!(
                 expense.status,
                 ExpenseStatus::Proposed,
@@ -68,15 +83,24 @@ pub fn apply(effect: ExpenseEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 !expense.rejectors.contains(&approver),
                 "Already rejected by this approver"
             );
+            assert!(
+                !expense.approvers.contains(&approver),
+                "Approver already approved this expense"
+            );
             expense.rejectors.push(approver);
             expense.status = ExpenseStatus::Rejected;
             Some(encode(&expense))
         }
         ExpenseEffect::Execute {
+            sacco,
             executed_evidence,
             amount,
         } => {
             let mut expense = decode_expense(pre);
+            assert_eq!(
+                expense.sacco_id, sacco,
+                "Expense belongs to a different SACCO"
+            );
             assert_eq!(
                 expense.status,
                 ExpenseStatus::Approved,
@@ -110,7 +134,7 @@ pub fn approved(amount: u128) -> Expense {
         evidence_cid: "cid".into(),
         requested_by: AccountId::new([2; 32]),
         status: ExpenseStatus::Approved,
-        approvers: vec![AccountId::new([2; 32])],
+        approvers: vec![AccountId::new([3; 32])],
         rejectors: vec![],
         executed_evidence: None,
         required_approvals: 1,
@@ -120,6 +144,11 @@ pub fn approved(amount: u128) -> Expense {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::AccountId;
+
+    fn sacco() -> AccountId {
+        AccountId::new([1; 32])
+    }
 
     #[test]
     #[should_panic(expected = "Amount does not match the expense")]
@@ -127,6 +156,7 @@ mod tests {
         let pre = encode(&approved(100));
         let _ = apply(
             ExpenseEffect::Execute {
+                sacco: sacco(),
                 executed_evidence: "receipt".into(),
                 amount: 101,
             },
@@ -139,6 +169,7 @@ mod tests {
         let pre = encode(&approved(100));
         let post = apply(
             ExpenseEffect::Execute {
+                sacco: sacco(),
                 executed_evidence: "receipt".into(),
                 amount: 100,
             },
@@ -148,5 +179,81 @@ mod tests {
         let expense = decode_expense(&post);
         assert_eq!(expense.status, ExpenseStatus::Executed);
         assert_eq!(expense.executed_evidence.as_deref(), Some("receipt"));
+    }
+
+    #[test]
+    #[should_panic(expected = "Expense belongs to a different SACCO")]
+    fn another_saccos_approver_cannot_execute_this_expense() {
+        let pre = encode(&approved(100));
+        let _ = apply(
+            ExpenseEffect::Execute {
+                sacco: AccountId::new([9; 32]),
+                executed_evidence: "receipt".into(),
+                amount: 100,
+            },
+            &pre,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Proposer cannot approve their own expense")]
+    fn the_proposer_cannot_approve_their_own_expense() {
+        let expense = Expense {
+            status: ExpenseStatus::Proposed,
+            approvers: vec![],
+            ..approved(100)
+        };
+        let _ = apply(
+            ExpenseEffect::Approve {
+                sacco: sacco(),
+                approver: AccountId::new([2; 32]),
+            },
+            &encode(&expense),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Approver already approved this expense")]
+    fn an_approver_cannot_reject_after_approving() {
+        let expense = Expense {
+            status: ExpenseStatus::Proposed,
+            approvers: vec![AccountId::new([3; 32])],
+            ..approved(100)
+        };
+        let _ = apply(
+            ExpenseEffect::Reject {
+                sacco: sacco(),
+                approver: AccountId::new([3; 32]),
+            },
+            &encode(&expense),
+        );
+    }
+
+    #[test]
+    fn reaching_the_threshold_approves_the_expense() {
+        let expense = Expense {
+            status: ExpenseStatus::Proposed,
+            approvers: vec![],
+            required_approvals: 2,
+            ..approved(100)
+        };
+        let once = apply(
+            ExpenseEffect::Approve {
+                sacco: sacco(),
+                approver: AccountId::new([3; 32]),
+            },
+            &encode(&expense),
+        )
+        .expect("writes");
+        assert_eq!(decode_expense(&once).status, ExpenseStatus::Proposed);
+        let twice = apply(
+            ExpenseEffect::Approve {
+                sacco: sacco(),
+                approver: AccountId::new([4; 32]),
+            },
+            &once,
+        )
+        .expect("writes");
+        assert_eq!(decode_expense(&twice).status, ExpenseStatus::Approved);
     }
 }

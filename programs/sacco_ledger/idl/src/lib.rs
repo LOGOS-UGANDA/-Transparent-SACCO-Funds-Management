@@ -34,10 +34,6 @@ pub struct InstructionSpec {
 }
 
 const NONE: &[ArgSpec] = &[];
-const ID: &[ArgSpec] = &[ArgSpec {
-    name: "id",
-    ty: ArgType::Scalar("account_id"),
-}];
 
 /// The account types the program owns, in shard order.
 const ACCOUNT_TYPES: &[&str] = &[
@@ -50,11 +46,25 @@ const ACCOUNT_TYPES: &[&str] = &[
     "ProgramConfig",
 ];
 
+/// Structured argument types referenced by name from instruction args.
+const TYPE_DEFS: &[(&str, &[(&str, &str)])] = &[(
+    "totals",
+    &[
+        ("deposits_savings", "u128"),
+        ("deposits_share_capital", "u128"),
+        ("loans_disbursed", "u128"),
+        ("loans_repaid", "u128"),
+        ("expenses", "u128"),
+    ],
+)];
+
 /// Notes copied into the artifact for client authors.
 const NOTES: &[&str] = &[
     "Attestation model: the program records and approves off-chain money events; it holds no value and no token transfers occur.",
     "Unit variants (verify_sacco, confirm_deposit, approve/reject loan and expense) carry no args; arg names match the Instruction enum fields exactly.",
     "Approval thresholds are pinned into loans and expenses at creation and validated against the live SACCO config, because an effect cannot read another shard.",
+    "Accounts with init: true require authorization (signer: true) so plan can claim the empty shard.",
+    "In v1 verify_sacco is self-verification by the SACCO admin.",
 ];
 
 /// Every instruction, in enum order.
@@ -64,7 +74,7 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
         accounts: &[AccountSpec {
             name: "config",
             writable: true,
-            signer: false,
+            signer: true,
             init: true,
         }],
         args: NONE,
@@ -75,7 +85,7 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
             AccountSpec {
                 name: "sacco",
                 writable: true,
-                signer: false,
+                signer: true,
                 init: true,
             },
             AccountSpec {
@@ -110,7 +120,7 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
                 init: false,
             },
             AccountSpec {
-                name: "registrar",
+                name: "admin",
                 writable: false,
                 signer: true,
                 init: false,
@@ -134,7 +144,10 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
                 init: false,
             },
         ],
-        args: ID,
+        args: &[ArgSpec {
+            name: "approver",
+            ty: ArgType::Scalar("account_id"),
+        }],
     },
     InstructionSpec {
         name: "add_supervisor",
@@ -152,7 +165,10 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
                 init: false,
             },
         ],
-        args: ID,
+        args: &[ArgSpec {
+            name: "supervisor",
+            ty: ArgType::Scalar("account_id"),
+        }],
     },
     InstructionSpec {
         name: "add_member",
@@ -166,7 +182,7 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
             AccountSpec {
                 name: "member",
                 writable: true,
-                signer: false,
+                signer: true,
                 init: true,
             },
             AccountSpec {
@@ -176,7 +192,10 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
                 init: false,
             },
         ],
-        args: ID,
+        args: &[ArgSpec {
+            name: "identity",
+            ty: ArgType::Scalar("account_id"),
+        }],
     },
     InstructionSpec {
         name: "record_deposit",
@@ -196,7 +215,7 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
             AccountSpec {
                 name: "deposit",
                 writable: true,
-                signer: false,
+                signer: true,
                 init: true,
             },
             AccountSpec {
@@ -248,7 +267,7 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
         accounts: &[
             AccountSpec {
                 name: "sacco",
-                writable: true,
+                writable: false,
                 signer: false,
                 init: false,
             },
@@ -261,7 +280,7 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
             AccountSpec {
                 name: "loan",
                 writable: true,
-                signer: false,
+                signer: true,
                 init: true,
             },
             AccountSpec {
@@ -421,14 +440,14 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
         accounts: &[
             AccountSpec {
                 name: "sacco",
-                writable: true,
+                writable: false,
                 signer: false,
                 init: false,
             },
             AccountSpec {
                 name: "expense",
                 writable: true,
-                signer: false,
+                signer: true,
                 init: true,
             },
             AccountSpec {
@@ -550,7 +569,7 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
             AccountSpec {
                 name: "summary",
                 writable: true,
-                signer: false,
+                signer: true,
                 init: true,
             },
             AccountSpec {
@@ -624,12 +643,29 @@ pub fn render() -> String {
         })
         .collect();
 
+    let types: serde_json::Map<String, serde_json::Value> = TYPE_DEFS
+        .iter()
+        .map(|(name, fields)| {
+            (
+                (*name).to_string(),
+                serde_json::json!({
+                    "kind": "struct",
+                    "fields": fields.iter().map(|(field, ty)| serde_json::json!({
+                        "name": field,
+                        "type": ty,
+                    })).collect::<Vec<_>>(),
+                }),
+            )
+        })
+        .collect();
+
     let document = serde_json::json!({
-        "version": "0.2.0",
+        "version": "0.3.0",
         "name": "sacco_ledger",
-        "description": "Transparent SACCO attestation ledger: deposits, loans and expenses recorded and approved on chain; value stays off chain. Regenerated from the sacco_ledger_core::Instruction enum (borsh + serde).",
+        "description": "Transparent SACCO attestation ledger: deposits, loans and expenses recorded and approved on chain; value stays off chain. Hand-maintained IDL table kept in lockstep with sacco_ledger_core::Instruction (see idl coverage tests).",
         "instructions": instructions,
         "account_types": ACCOUNT_TYPES,
+        "types": types,
         "notes": NOTES,
     });
 

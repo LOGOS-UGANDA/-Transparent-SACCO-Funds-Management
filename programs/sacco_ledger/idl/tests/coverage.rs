@@ -1,4 +1,4 @@
-//! Every instruction has an IDL entry.
+//! Every instruction has an IDL entry whose args match the Instruction enum fields.
 
 use sacco_ledger_core::{AccountId, DepositType, Instruction, Totals};
 use sacco_ledger_idl::{variant_name, INSTRUCTIONS};
@@ -58,6 +58,22 @@ fn samples() -> Vec<Instruction> {
     ]
 }
 
+/// Serde field names for a sample instruction (order is not stable under serde_json).
+fn serde_field_names(instruction: &Instruction) -> Vec<String> {
+    match serde_json::to_value(instruction).expect("Instruction serializes") {
+        // Unit variants serialize as a bare string tag.
+        serde_json::Value::String(_) => Vec::new(),
+        serde_json::Value::Object(map) => {
+            assert_eq!(map.len(), 1, "one variant tag");
+            match map.values().next().expect("variant payload") {
+                serde_json::Value::Object(fields) => fields.keys().cloned().collect(),
+                other => panic!("unexpected variant payload: {other}"),
+            }
+        }
+        other => panic!("unexpected Instruction serialization: {other}"),
+    }
+}
+
 #[test]
 fn the_table_covers_every_instruction() {
     let table: Vec<&str> = INSTRUCTIONS.iter().map(|spec| spec.name).collect();
@@ -73,6 +89,40 @@ fn the_table_covers_every_instruction() {
         samples().len(),
         "the table has an entry the enum does not use"
     );
+}
+
+#[test]
+fn arg_names_match_the_instruction_enum_fields() {
+    for instruction in samples() {
+        let name = variant_name(&instruction);
+        let spec = INSTRUCTIONS
+            .iter()
+            .find(|spec| spec.name == name)
+            .unwrap_or_else(|| panic!("{name} missing from IDL table"));
+        let mut idl_args: Vec<&str> = spec.args.iter().map(|arg| arg.name).collect();
+        let mut enum_fields = serde_field_names(&instruction);
+        idl_args.sort_unstable();
+        enum_fields.sort_unstable();
+        assert_eq!(
+            idl_args, enum_fields,
+            "{name}: IDL args must match Instruction serde field names"
+        );
+    }
+}
+
+#[test]
+fn init_accounts_require_authorization() {
+    for spec in INSTRUCTIONS {
+        for account in spec.accounts {
+            if account.init {
+                assert!(
+                    account.signer,
+                    "{}: init account '{}' must be signer/authorized so plan can claim it",
+                    spec.name, account.name
+                );
+            }
+        }
+    }
 }
 
 #[test]

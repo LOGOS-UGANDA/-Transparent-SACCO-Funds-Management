@@ -26,7 +26,7 @@ sacco_ledger/
 |-------------|---------|
 | `Initialize` | Program config shard |
 | `RegisterSacco` | Register a SACCO with its treasury |
-| `VerifySacco` | Registrar marks a SACCO verified |
+| `VerifySacco` | Admin self-verifies the SACCO (v1) |
 | `AddApprover` / `AddSupervisor` | Governance roles |
 | `AddMember` | Member account shard |
 | `RecordDeposit` / `ConfirmDeposit` | Savings or share-capital deposit, then member confirmation |

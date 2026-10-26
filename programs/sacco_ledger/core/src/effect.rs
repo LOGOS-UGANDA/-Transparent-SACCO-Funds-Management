@@ -32,7 +32,9 @@ pub enum SaccoEffect {
         admin: AccountId,
     },
     Verify {
-        registrar: AccountId,
+        /// In v1 the admin verifies its own SACCO; the field is named for what
+        /// it is, not for a registrar role that does not exist yet.
+        admin: AccountId,
     },
     AddApprover {
         admin: AccountId,
@@ -107,32 +109,44 @@ pub enum DepositEffect {
 }
 
 /// Effects on a loan shard.
+///
+/// Every follow-up effect carries the SACCO it belongs to: the shard stores
+/// `sacco_id` at Init and compares it on each transition, because the approval
+/// check runs in the SACCO shard and cannot see this account.
 #[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 pub enum LoanEffect {
     Init {
         sacco: AccountId,
         member: AccountId,
+        applicant: AccountId,
         principal: u128,
         purpose: String,
         required_approvals: u8,
     },
     Approve {
+        sacco: AccountId,
         approver: AccountId,
     },
     Reject {
+        sacco: AccountId,
         approver: AccountId,
     },
     Disburse {
+        sacco: AccountId,
+        member: AccountId,
         evidence_cid: String,
         principal: u128,
     },
     Repay {
+        sacco: AccountId,
+        member: AccountId,
         amount: u128,
         reference: String,
     },
 }
 
-/// Effects on an expense shard.
+/// Effects on an expense shard. The SACCO id is carried for the same reason as
+/// on `LoanEffect`.
 #[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 pub enum ExpenseEffect {
     Init {
@@ -144,12 +158,15 @@ pub enum ExpenseEffect {
         required_approvals: u8,
     },
     Approve {
+        sacco: AccountId,
         approver: AccountId,
     },
     Reject {
+        sacco: AccountId,
         approver: AccountId,
     },
     Execute {
+        sacco: AccountId,
         executed_evidence: String,
         amount: u128,
     },

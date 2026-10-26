@@ -8,14 +8,14 @@
     "PeriodSummary",
     "ProgramConfig"
   ],
-  "description": "Transparent SACCO attestation ledger: deposits, loans and expenses recorded and approved on chain; value stays off chain. Regenerated from the sacco_ledger_core::Instruction enum (borsh + serde).",
+  "description": "Transparent SACCO attestation ledger: deposits, loans and expenses recorded and approved on chain; value stays off chain. Hand-maintained IDL table kept in lockstep with sacco_ledger_core::Instruction (see idl coverage tests).",
   "instructions": [
     {
       "accounts": [
         {
           "init": true,
           "name": "config",
-          "signer": false,
+          "signer": true,
           "writable": true
         }
       ],
@@ -27,7 +27,7 @@
         {
           "init": true,
           "name": "sacco",
-          "signer": false,
+          "signer": true,
           "writable": true
         },
         {
@@ -63,7 +63,7 @@
         },
         {
           "init": false,
-          "name": "registrar",
+          "name": "admin",
           "signer": true,
           "writable": false
         }
@@ -88,7 +88,7 @@
       ],
       "args": [
         {
-          "name": "id",
+          "name": "approver",
           "type": "account_id"
         }
       ],
@@ -111,7 +111,7 @@
       ],
       "args": [
         {
-          "name": "id",
+          "name": "supervisor",
           "type": "account_id"
         }
       ],
@@ -128,7 +128,7 @@
         {
           "init": true,
           "name": "member",
-          "signer": false,
+          "signer": true,
           "writable": true
         },
         {
@@ -140,7 +140,7 @@
       ],
       "args": [
         {
-          "name": "id",
+          "name": "identity",
           "type": "account_id"
         }
       ],
@@ -163,7 +163,7 @@
         {
           "init": true,
           "name": "deposit",
-          "signer": false,
+          "signer": true,
           "writable": true
         },
         {
@@ -222,7 +222,7 @@
           "init": false,
           "name": "sacco",
           "signer": false,
-          "writable": true
+          "writable": false
         },
         {
           "init": false,
@@ -233,7 +233,7 @@
         {
           "init": true,
           "name": "loan",
-          "signer": false,
+          "signer": true,
           "writable": true
         },
         {
@@ -395,12 +395,12 @@
           "init": false,
           "name": "sacco",
           "signer": false,
-          "writable": true
+          "writable": false
         },
         {
           "init": true,
           "name": "expense",
-          "signer": false,
+          "signer": true,
           "writable": true
         },
         {
@@ -522,7 +522,7 @@
         {
           "init": true,
           "name": "summary",
-          "signer": false,
+          "signer": true,
           "writable": true
         },
         {
@@ -549,7 +549,36 @@
   "notes": [
     "Attestation model: the program records and approves off-chain money events; it holds no value and no token transfers occur.",
     "Unit variants (verify_sacco, confirm_deposit, approve/reject loan and expense) carry no args; arg names match the Instruction enum fields exactly.",
-    "Approval thresholds are pinned into loans and expenses at creation and validated against the live SACCO config, because an effect cannot read another shard."
+    "Approval thresholds are pinned into loans and expenses at creation and validated against the live SACCO config, because an effect cannot read another shard.",
+    "Accounts with init: true require authorization (signer: true) so plan can claim the empty shard.",
+    "In v1 verify_sacco is self-verification by the SACCO admin."
   ],
-  "version": "0.2.0"
+  "types": {
+    "totals": {
+      "fields": [
+        {
+          "name": "deposits_savings",
+          "type": "u128"
+        },
+        {
+          "name": "deposits_share_capital",
+          "type": "u128"
+        },
+        {
+          "name": "loans_disbursed",
+          "type": "u128"
+        },
+        {
+          "name": "loans_repaid",
+          "type": "u128"
+        },
+        {
+          "name": "expenses",
+          "type": "u128"
+        }
+      ],
+      "kind": "struct"
+    }
+  },
+  "version": "0.3.0"
 }

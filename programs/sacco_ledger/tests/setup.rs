@@ -93,7 +93,7 @@ fn verify_sacco_by_admin() {
 
 #[test]
 #[should_panic(expected = "Only the SACCO admin can verify in v1")]
-fn verify_sacco_requires_registrar() {
+fn verify_sacco_requires_admin() {
     let mut ledger = Ledger::new();
     let (sacco, _admin) = registered(&mut ledger);
     ledger.execute(&[meta(sacco), meta(aid(3))], Instruction::VerifySacco);

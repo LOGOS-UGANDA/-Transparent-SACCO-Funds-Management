@@ -147,6 +147,8 @@ pub struct Deposit {
 pub struct Loan {
     pub sacco_id: AccountId,
     pub member_id: AccountId,
+    /// Identity that signed the application; cannot approve or reject its own loan.
+    pub applicant: AccountId,
     pub principal: u128,
     pub purpose: String,
     pub status: LoanStatus,
@@ -264,11 +266,11 @@ pub enum Instruction {
         treasury: AccountId,
     },
 
-    /// Mark a SACCO verified (protocol / registrar authority).
+    /// Mark a SACCO verified. In v1 the SACCO admin self-verifies.
     ///
     /// Accounts:
     /// - Sacco account (mut)
-    /// - Registrar account (signer)
+    /// - Admin account (signer)
     VerifySacco,
 
     /// Add a multi-sig approver (treasurer or committee member).

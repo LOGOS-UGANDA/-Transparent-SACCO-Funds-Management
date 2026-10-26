@@ -105,8 +105,20 @@ pub fn totals(ledger: &Ledger) -> Totals {
     Totals::of(&ledger.sacco(aid(1)))
 }
 
-/// Proposes a 120_000 expense on the two-approver SACCO.
+/// A verified SACCO with approvers `aid(2)`, `aid(3)`, `aid(4)` and threshold 2.
+///
+/// Three approvers are required for expenses: the proposer cannot approve their
+/// own proposal, so a threshold of 2 needs a third signer.
+pub fn three_approver_sacco(ledger: &mut Ledger) -> AccountId {
+    verified_sacco(ledger);
+    add_verified_member(ledger, aid(6));
+    ledger.set_approvers(aid(1), &[aid(2), aid(3), aid(4)], 2);
+    aid(1)
+}
+
+/// Proposes a 120_000 expense (proposer `aid(2)`) on the three-approver SACCO.
 pub fn proposed_expense(ledger: &mut Ledger, expense: AccountId) {
+    three_approver_sacco(ledger);
     ledger.execute(
         &[meta(aid(1)), meta(expense), meta(aid(2))],
         Instruction::ProposeExpense {

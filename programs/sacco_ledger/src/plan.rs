@@ -52,10 +52,10 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
             );
         }
         Instruction::VerifySacco => {
-            let [sacco, registrar] = <&[_; 2]>::try_from(input.accounts.as_slice())
-                .expect("VerifySacco requires sacco and registrar");
-            let registrar = signer(registrar, "Registrar must authorize verification");
-            plan.effect(sacco, &Effect::Sacco(SaccoEffect::Verify { registrar }));
+            let [sacco, admin] = <&[_; 2]>::try_from(input.accounts.as_slice())
+                .expect("VerifySacco requires sacco and admin");
+            let admin = signer(admin, "Admin must authorize verification");
+            plan.effect(sacco, &Effect::Sacco(SaccoEffect::Verify { admin }));
         }
         Instruction::AddApprover { approver } => {
             let [sacco, admin] = <&[_; 2]>::try_from(input.accounts.as_slice())
@@ -170,6 +170,7 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
                 &Effect::Loan(LoanEffect::Init {
                     sacco: sacco.account_id,
                     member: member.account_id,
+                    applicant: signer,
                     principal: amount,
                     purpose,
                     required_approvals,
@@ -184,7 +185,13 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
                 sacco,
                 &Effect::Sacco(SaccoEffect::AuthorizeApprover { approver }),
             );
-            plan.effect(loan, &Effect::Loan(LoanEffect::Approve { approver }));
+            plan.effect(
+                loan,
+                &Effect::Loan(LoanEffect::Approve {
+                    sacco: sacco.account_id,
+                    approver,
+                }),
+            );
         }
         Instruction::RejectLoan => {
             let [sacco, loan, approver] = <&[_; 3]>::try_from(input.accounts.as_slice())
@@ -194,13 +201,21 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
                 sacco,
                 &Effect::Sacco(SaccoEffect::AuthorizeApprover { approver }),
             );
-            plan.effect(loan, &Effect::Loan(LoanEffect::Reject { approver }));
+            plan.effect(
+                loan,
+                &Effect::Loan(LoanEffect::Reject {
+                    sacco: sacco.account_id,
+                    approver,
+                }),
+            );
         }
         Instruction::DisburseLoan {
             evidence_cid,
             principal,
         } => {
-            let [sacco, _member, loan, approver] = <&[_; 4]>::try_from(input.accounts.as_slice())
+            // Attestation model: outflows are not checked against recorded
+            // deposits; the ledger records the off-chain transfer evidence.
+            let [sacco, member, loan, approver] = <&[_; 4]>::try_from(input.accounts.as_slice())
                 .expect("DisburseLoan requires sacco, member, loan and approver");
             let approver = signer(approver, "Approver must authorize");
             plan.effect(
@@ -213,6 +228,8 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
             plan.effect(
                 loan,
                 &Effect::Loan(LoanEffect::Disburse {
+                    sacco: sacco.account_id,
+                    member: member.account_id,
                     evidence_cid,
                     principal,
                 }),
@@ -223,7 +240,7 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
             amount,
             reference,
         } => {
-            let [sacco, _member, loan_account, approver] =
+            let [sacco, member, loan_account, approver] =
                 <&[_; 4]>::try_from(input.accounts.as_slice())
                     .expect("RecordRepayment requires sacco, member, loan and approver");
             assert_eq!(
@@ -237,7 +254,12 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
             );
             plan.effect(
                 loan_account,
-                &Effect::Loan(LoanEffect::Repay { amount, reference }),
+                &Effect::Loan(LoanEffect::Repay {
+                    sacco: sacco.account_id,
+                    member: member.account_id,
+                    amount,
+                    reference,
+                }),
             );
         }
         Instruction::ProposeExpense {
@@ -280,7 +302,10 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
             );
             plan.effect(
                 expense,
-                &Effect::Expense(ExpenseEffect::Approve { approver }),
+                &Effect::Expense(ExpenseEffect::Approve {
+                    sacco: sacco.account_id,
+                    approver,
+                }),
             );
         }
         Instruction::RejectExpense => {
@@ -293,13 +318,18 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
             );
             plan.effect(
                 expense,
-                &Effect::Expense(ExpenseEffect::Reject { approver }),
+                &Effect::Expense(ExpenseEffect::Reject {
+                    sacco: sacco.account_id,
+                    approver,
+                }),
             );
         }
         Instruction::ExecuteExpense {
             executed_evidence,
             amount,
         } => {
+            // Attestation model: expense totals are not capped by deposits;
+            // execution records the off-chain payment reference only.
             let [sacco, expense, approver] = <&[_; 3]>::try_from(input.accounts.as_slice())
                 .expect("ExecuteExpense requires sacco, expense and approver");
             let approver = signer(approver, "Approver must authorize");
@@ -310,6 +340,7 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
             plan.effect(
                 expense,
                 &Effect::Expense(ExpenseEffect::Execute {
+                    sacco: sacco.account_id,
                     executed_evidence,
                     amount,
                 }),

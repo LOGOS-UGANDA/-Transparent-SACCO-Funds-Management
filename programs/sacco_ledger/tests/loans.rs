@@ -13,6 +13,7 @@ fn apply_loan_creates_applied_loan() {
     let loan = ledger.loan(aid(7));
     assert_eq!(loan.sacco_id, aid(1));
     assert_eq!(loan.member_id, aid(6));
+    assert_eq!(loan.applicant, aid(6));
     assert_eq!(loan.principal, 200_000);
     assert_eq!(loan.status, LoanStatus::Applied);
     assert_eq!(loan.required_approvals, 2);
@@ -166,7 +167,7 @@ fn record_repayment_rejects_overpay() {
 }
 
 #[test]
-#[should_panic(expected = "Loan is already fully repaid")]
+#[should_panic(expected = "Loan is not in Disbursed state")]
 fn record_repayment_rejects_closed_loan() {
     let mut ledger = Ledger::new();
     two_approver_sacco(&mut ledger);
@@ -186,5 +187,33 @@ fn record_repayment_rejects_closed_loan() {
             amount: 1,
             reference: "Y".into(),
         },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Applicant cannot approve their own loan")]
+fn applicant_cannot_approve_their_own_loan() {
+    let mut ledger = Ledger::new();
+    two_approver_sacco(&mut ledger);
+    // Make the member an approver so AuthorizeApprover passes, then self-approve.
+    ledger.set_approvers(aid(1), &[aid(2), aid(3), aid(6)], 2);
+    applied_loan(&mut ledger, aid(7));
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(7)), meta(aid(6))],
+        Instruction::ApproveLoan,
+    );
+}
+
+#[test]
+#[should_panic(expected = "Loan belongs to a different SACCO")]
+fn another_sacco_cannot_approve_this_loan() {
+    let mut ledger = Ledger::new();
+    two_approver_sacco(&mut ledger);
+    applied_loan(&mut ledger, aid(7));
+    ledger.verified_sacco(aid(20), aid(5));
+    ledger.set_approvers(aid(20), &[aid(5)], 1);
+    ledger.execute(
+        &[meta(aid(20)), meta(aid(7)), meta(aid(5))],
+        Instruction::ApproveLoan,
     );
 }

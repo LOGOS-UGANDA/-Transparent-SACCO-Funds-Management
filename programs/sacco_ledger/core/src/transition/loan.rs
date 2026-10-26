@@ -1,16 +1,21 @@
-//! The loan shard: lifecycle and the repayment cap.
+//! The loan shard: lifecycle, ownership and the repayment cap.
 
 use crate::codec::{decode, encode};
 use crate::effect::LoanEffect;
 use crate::{Loan, LoanStatus};
 
 /// Applies a loan effect to the loan shard.
+///
+/// The SACCO shard authorizes approvers, but it cannot read this account, so
+/// every transition re-checks that the effect names the SACCO that owns the
+/// loan and the member account it was opened for.
 #[must_use]
 pub fn apply(effect: LoanEffect, pre: &[u8]) -> Option<Vec<u8>> {
     match effect {
         LoanEffect::Init {
             sacco,
             member,
+            applicant,
             principal,
             purpose,
             required_approvals,
@@ -21,6 +26,7 @@ pub fn apply(effect: LoanEffect, pre: &[u8]) -> Option<Vec<u8>> {
             Some(encode(&Loan {
                 sacco_id: sacco,
                 member_id: member,
+                applicant,
                 principal,
                 purpose,
                 status: LoanStatus::Applied,
@@ -31,12 +37,17 @@ pub fn apply(effect: LoanEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 required_approvals,
             }))
         }
-        LoanEffect::Approve { approver } => {
+        LoanEffect::Approve { sacco, approver } => {
             let mut loan = decode_loan(pre);
+            assert_eq!(loan.sacco_id, sacco, "Loan belongs to a different SACCO");
             assert_eq!(
                 loan.status,
                 LoanStatus::Applied,
                 "Loan is not in Applied state"
+            );
+            assert_ne!(
+                approver, loan.applicant,
+                "Applicant cannot approve their own loan"
             );
             assert!(
                 !loan.approvals.contains(&approver),
@@ -52,26 +63,42 @@ pub fn apply(effect: LoanEffect, pre: &[u8]) -> Option<Vec<u8>> {
             }
             Some(encode(&loan))
         }
-        LoanEffect::Reject { approver } => {
+        LoanEffect::Reject { sacco, approver } => {
             let mut loan = decode_loan(pre);
+            assert_eq!(loan.sacco_id, sacco, "Loan belongs to a different SACCO");
             assert_eq!(
                 loan.status,
                 LoanStatus::Applied,
                 "Loan is not in Applied state"
             );
+            assert_ne!(
+                approver, loan.applicant,
+                "Applicant cannot reject their own loan"
+            );
             assert!(
                 !loan.rejectors.contains(&approver),
                 "Already rejected by this approver"
+            );
+            assert!(
+                !loan.approvals.contains(&approver),
+                "Approver already approved this loan"
             );
             loan.rejectors.push(approver);
             loan.status = LoanStatus::Rejected;
             Some(encode(&loan))
         }
         LoanEffect::Disburse {
+            sacco,
+            member,
             evidence_cid,
             principal,
         } => {
             let mut loan = decode_loan(pre);
+            assert_eq!(loan.sacco_id, sacco, "Loan belongs to a different SACCO");
+            assert_eq!(
+                loan.member_id, member,
+                "Member account does not match the loan"
+            );
             assert_eq!(
                 loan.status,
                 LoanStatus::Approved,
@@ -89,20 +116,27 @@ pub fn apply(effect: LoanEffect, pre: &[u8]) -> Option<Vec<u8>> {
             loan.evidence_cid = Some(evidence_cid);
             Some(encode(&loan))
         }
-        LoanEffect::Repay { amount, reference } => {
+        LoanEffect::Repay {
+            sacco,
+            member,
+            amount,
+            reference,
+        } => {
             let mut loan = decode_loan(pre);
+            assert_eq!(loan.sacco_id, sacco, "Loan belongs to a different SACCO");
+            assert_eq!(
+                loan.member_id, member,
+                "Member account does not match the loan"
+            );
             assert!(amount > 0, "Repayment must be greater than 0");
             assert!(
                 !reference.is_empty(),
                 "Repayment reference must not be empty"
             );
-            assert!(
-                loan.status == LoanStatus::Disbursed || loan.status == LoanStatus::Repaid,
+            assert_eq!(
+                loan.status,
+                LoanStatus::Disbursed,
                 "Loan is not in Disbursed state"
-            );
-            assert!(
-                loan.status != LoanStatus::Repaid || loan.repaid_amount < loan.principal,
-                "Loan is already fully repaid"
             );
             let outstanding = loan
                 .principal
@@ -136,6 +170,7 @@ pub fn disbursed(principal: u128) -> Loan {
     Loan {
         sacco_id: AccountId::new([1; 32]),
         member_id: AccountId::new([6; 32]),
+        applicant: AccountId::new([6; 32]),
         principal,
         purpose: "school fees".into(),
         status: LoanStatus::Disbursed,
@@ -150,12 +185,23 @@ pub fn disbursed(principal: u128) -> Loan {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::AccountId;
+
+    fn sacco() -> AccountId {
+        AccountId::new([1; 32])
+    }
+
+    fn member() -> AccountId {
+        AccountId::new([6; 32])
+    }
 
     #[test]
     fn the_cap_is_the_outstanding_principal() {
         let pre = encode(&disbursed(100));
         assert!(apply(
             LoanEffect::Repay {
+                sacco: sacco(),
+                member: member(),
                 amount: 100,
                 reference: "ok".into()
             },
@@ -170,7 +216,39 @@ mod tests {
         let pre = encode(&disbursed(100));
         let _ = apply(
             LoanEffect::Repay {
+                sacco: sacco(),
+                member: member(),
                 amount: 101,
+                reference: "no".into(),
+            },
+            &pre,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Loan belongs to a different SACCO")]
+    fn a_loan_cannot_be_repaid_through_another_sacco() {
+        let pre = encode(&disbursed(100));
+        let _ = apply(
+            LoanEffect::Repay {
+                sacco: AccountId::new([9; 32]),
+                member: member(),
+                amount: 1,
+                reference: "no".into(),
+            },
+            &pre,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Member account does not match the loan")]
+    fn a_loan_cannot_be_repaid_for_another_member() {
+        let pre = encode(&disbursed(100));
+        let _ = apply(
+            LoanEffect::Repay {
+                sacco: sacco(),
+                member: AccountId::new([7; 32]),
+                amount: 1,
                 reference: "no".into(),
             },
             &pre,
@@ -182,6 +260,8 @@ mod tests {
         let pre = encode(&disbursed(100));
         let post = apply(
             LoanEffect::Repay {
+                sacco: sacco(),
+                member: member(),
                 amount: 100,
                 reference: "ok".into(),
             },
@@ -189,5 +269,67 @@ mod tests {
         )
         .expect("writes");
         assert_eq!(decode_loan(&post).status, LoanStatus::Repaid);
+    }
+
+    #[test]
+    #[should_panic(expected = "Approver already approved this loan")]
+    fn an_approver_cannot_reject_after_approving() {
+        let loan = Loan {
+            status: LoanStatus::Applied,
+            approvals: vec![AccountId::new([2; 32])],
+            ..disbursed(100)
+        };
+        let _ = apply(
+            LoanEffect::Reject {
+                sacco: sacco(),
+                approver: AccountId::new([2; 32]),
+            },
+            &encode(&loan),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Applicant cannot approve their own loan")]
+    fn an_applicant_cannot_approve_their_own_loan() {
+        let loan = Loan {
+            status: LoanStatus::Applied,
+            approvals: vec![],
+            ..disbursed(100)
+        };
+        let _ = apply(
+            LoanEffect::Approve {
+                sacco: sacco(),
+                approver: member(),
+            },
+            &encode(&loan),
+        );
+    }
+
+    #[test]
+    fn reaching_the_threshold_approves_the_loan() {
+        let loan = Loan {
+            status: LoanStatus::Applied,
+            approvals: vec![],
+            required_approvals: 2,
+            ..disbursed(100)
+        };
+        let once = apply(
+            LoanEffect::Approve {
+                sacco: sacco(),
+                approver: AccountId::new([2; 32]),
+            },
+            &encode(&loan),
+        )
+        .expect("writes");
+        assert_eq!(decode_loan(&once).status, LoanStatus::Applied);
+        let twice = apply(
+            LoanEffect::Approve {
+                sacco: sacco(),
+                approver: AccountId::new([3; 32]),
+            },
+            &once,
+        )
+        .expect("writes");
+        assert_eq!(decode_loan(&twice).status, LoanStatus::Approved);
     }
 }

@@ -28,6 +28,13 @@ Item {
 
     Component.onCompleted: refreshStatus()
 
+    // Bridge the scaffold's callModule API to the view-level `call(method, args)`.
+    property var bridge: QtObject {
+        function call(method, args) {
+            return logos.callModule("sacco_core", method, args)
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 24
@@ -100,6 +107,23 @@ Item {
             Layout.fillWidth: true
             opacity: 0.65
             font.pixelSize: 12
+        }
+
+        TabBar {
+            id: roleTabs
+            Layout.fillWidth: true
+            TabButton { text: "Member" }
+            TabButton { text: "Committee" }
+            TabButton { text: "Auditor" }
+        }
+
+        StackLayout {
+            currentIndex: roleTabs.currentIndex
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            MemberView { bridge: root.bridge }
+            CommitteeView { bridge: root.bridge }
+            AuditorView { bridge: root.bridge }
         }
     }
 }

@@ -2,7 +2,7 @@
 
 use crate::codec::{decode, encode};
 use crate::effect::SaccoEffect;
-use crate::Sacco;
+use crate::{is_approver, DepositType, Sacco};
 
 /// Applies a SACCO effect to the SACCO shard.
 #[must_use]
@@ -76,6 +76,34 @@ pub fn apply(effect: SaccoEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 "Member identity already registered"
             );
             sacco.member_ids.push(identity);
+            Some(encode(&sacco))
+        }
+        SaccoEffect::RecordDeposit {
+            recorder,
+            amount,
+            deposit_type,
+        } => {
+            let mut sacco = decode_sacco(pre);
+            assert!(sacco.is_verified, "Sacco is not verified");
+            assert!(
+                is_approver(&sacco, &recorder),
+                "Only SACCO approvers can record deposits"
+            );
+            assert!(amount > 0, "Deposit amount must be greater than 0");
+            match deposit_type {
+                DepositType::Savings => {
+                    sacco.total_deposits_savings = sacco
+                        .total_deposits_savings
+                        .checked_add(amount)
+                        .expect("savings total overflow");
+                }
+                DepositType::ShareCapital => {
+                    sacco.total_deposits_share_capital = sacco
+                        .total_deposits_share_capital
+                        .checked_add(amount)
+                        .expect("share capital total overflow");
+                }
+            }
             Some(encode(&sacco))
         }
     }

@@ -10,5 +10,6 @@ pub fn apply(effect: Effect, pre: &[u8]) -> Option<Vec<u8>> {
         Effect::Config(effect) => transition::config::apply(effect, pre),
         Effect::Sacco(effect) => transition::sacco::apply(effect, pre),
         Effect::Member(effect) => transition::member::apply(effect, pre),
+        Effect::Deposit(effect) => transition::deposit::apply(effect, pre),
     }
 }

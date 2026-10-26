@@ -51,6 +51,17 @@ pub fn unsigned(id: AccountId) -> AccountMeta {
     AccountMeta::new(id, false, PROGRAM)
 }
 
+/// Registers and verifies a SACCO owned by `aid(2)`.
+pub fn verified_sacco(ledger: &mut Ledger) -> AccountId {
+    ledger.verified_sacco(aid(1), aid(2));
+    aid(1)
+}
+
+/// Adds `member` to the fixture SACCO.
+pub fn add_verified_member(ledger: &mut Ledger, member: AccountId) {
+    ledger.add_member(aid(1), aid(2), member);
+}
+
 /// Shard state after executing instructions.
 #[derive(Default)]
 pub struct Ledger {

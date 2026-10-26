@@ -53,7 +53,7 @@ pub enum ExpenseStatus {
 }
 
 /// A SACCO institution: public registration, totals and per-SACCO approver config.
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Sacco {
     pub name: String,
     pub registration_number: String,
@@ -118,7 +118,7 @@ pub fn is_approver(sacco: &Sacco, id: &AccountId) -> bool {
 
 /// A SACCO member: balances are public in Phase 1 and move to private accounts in the
 /// privacy phase; the type is shaped so member data can move behind private accounts.
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Member {
     pub sacco_id: AccountId,
     pub identity: AccountId,
@@ -128,7 +128,7 @@ pub struct Member {
 }
 
 /// A recorded deposit: attests to off-chain money received for a member.
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Deposit {
     pub sacco_id: AccountId,
     pub member_id: AccountId,
@@ -143,7 +143,7 @@ pub struct Deposit {
 }
 
 /// A member loan: applied, multi-sig approved, disbursed with evidence, repaid.
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Loan {
     pub sacco_id: AccountId,
     pub member_id: AccountId,
@@ -159,7 +159,7 @@ pub struct Loan {
 }
 
 /// A SACCO expense: proposed, multi-sig approved, executed by recording the off-chain release.
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Expense {
     pub sacco_id: AccountId,
     pub amount: u128,
@@ -175,7 +175,7 @@ pub struct Expense {
 }
 
 /// Period snapshot of SACCO totals, posted by the treasurer and public for members.
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct PeriodSummary {
     pub sacco_id: AccountId,
     /// Period label, e.g. `2026-11`.
@@ -356,7 +356,7 @@ pub enum Instruction {
 const CONFIG_PDA_SEED: &[u8] = b"CONFIG";
 
 /// Singleton config stored at the `"CONFIG"` PDA.
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct ProgramConfig {
     /// Bumped when the registry layout changes; lets clients detect version.
     pub version: u8,

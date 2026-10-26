@@ -2,7 +2,7 @@
 
 use borsh::{BorshDeserialize, BorshSerialize};
 
-use crate::{AccountId, ProgramConfigVersion};
+use crate::{AccountId, Deposit, DepositType, ProgramConfigVersion};
 
 /// Every effect a `sacco_ledger` instruction can emit.
 #[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
@@ -10,6 +10,7 @@ pub enum Effect {
     Config(ConfigEffect),
     Sacco(SaccoEffect),
     Member(MemberEffect),
+    Deposit(DepositEffect),
 }
 
 /// Effects on the singleton config shard.
@@ -42,6 +43,11 @@ pub enum SaccoEffect {
         admin: AccountId,
         identity: AccountId,
     },
+    RecordDeposit {
+        recorder: AccountId,
+        amount: u128,
+        deposit_type: DepositType,
+    },
 }
 
 /// Effects on a member shard.
@@ -51,4 +57,16 @@ pub enum MemberEffect {
         sacco: AccountId,
         identity: AccountId,
     },
+    RecordDeposit {
+        sacco: AccountId,
+        amount: u128,
+        deposit_type: DepositType,
+    },
+}
+
+/// Effects on a deposit shard.
+#[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
+pub enum DepositEffect {
+    Init(Deposit),
+    Confirm { member: AccountId },
 }

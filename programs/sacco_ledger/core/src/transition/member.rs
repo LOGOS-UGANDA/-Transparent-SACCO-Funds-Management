@@ -18,6 +18,28 @@ pub fn apply(effect: MemberEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 loan_ids: vec![],
             }))
         }
+        MemberEffect::RecordDeposit {
+            sacco,
+            amount,
+            deposit_type,
+        } => {
+            let mut member = decode_member(pre, sacco);
+            match deposit_type {
+                crate::DepositType::Savings => {
+                    member.savings_balance = member
+                        .savings_balance
+                        .checked_add(amount)
+                        .expect("savings balance overflow");
+                }
+                crate::DepositType::ShareCapital => {
+                    member.share_capital_balance = member
+                        .share_capital_balance
+                        .checked_add(amount)
+                        .expect("share capital balance overflow");
+                }
+            }
+            Some(encode(&member))
+        }
     }
 }
 

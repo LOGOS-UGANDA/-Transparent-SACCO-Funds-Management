@@ -1,8 +1,8 @@
 //! Instruction planning: assert what metadata can prove, then name one effect per shard.
 
 use nssa_core::program::{AccountMeta, Plan, PlanInput};
-use sacco_ledger_core::effect::{ConfigEffect, Effect, MemberEffect, SaccoEffect};
-use sacco_ledger_core::Instruction;
+use sacco_ledger_core::effect::{ConfigEffect, DepositEffect, Effect, MemberEffect, SaccoEffect};
+use sacco_ledger_core::{Deposit, Instruction};
 
 /// The registry layout version this build writes and expects.
 pub const CONFIG_VERSION: u8 = 1;
@@ -88,6 +88,57 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
                     identity,
                 }),
             );
+        }
+        Instruction::RecordDeposit {
+            member,
+            amount,
+            deposit_type,
+            reference,
+        } => {
+            let [sacco, member_account, deposit, recorder] =
+                <&[_; 4]>::try_from(input.accounts.as_slice())
+                    .expect("RecordDeposit requires sacco, member, deposit and recorder");
+            assert!(deposit.is_authorized, "Deposit account must be authorized");
+            assert_eq!(
+                member_account.account_id, member,
+                "Member account does not match the member id argument"
+            );
+            let recorder = signer(recorder, "Recorder must authorize");
+
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::RecordDeposit {
+                    recorder,
+                    amount,
+                    deposit_type,
+                }),
+            );
+            plan.effect(
+                member_account,
+                &Effect::Member(MemberEffect::RecordDeposit {
+                    sacco: sacco.account_id,
+                    amount,
+                    deposit_type,
+                }),
+            );
+            plan.effect(
+                deposit,
+                &Effect::Deposit(DepositEffect::Init(Deposit {
+                    sacco_id: sacco.account_id,
+                    member_id: member,
+                    amount,
+                    deposit_type,
+                    reference,
+                    recorded_by: recorder,
+                    confirmed_by_member: false,
+                })),
+            );
+        }
+        Instruction::ConfirmDeposit => {
+            let [deposit, member] = <&[_; 2]>::try_from(input.accounts.as_slice())
+                .expect("ConfirmDeposit requires deposit and member");
+            let member = signer(member, "Member must authorize confirmation");
+            plan.effect(deposit, &Effect::Deposit(DepositEffect::Confirm { member }));
         }
         other => panic!("instruction not ported yet: {other:?}"),
     }

@@ -1,68 +1,90 @@
-# fee_transparency (LEZ program)
+# sacco_ledger (LEZ program)
 
-LEZ program for Transparent SACCO fee locking, category allocation, multi-sig release, and **token custody**.
+Transparent SACCO attestation ledger on the Logos Execution Zone. Deposits,
+loans and expenses are recorded and approved on chain; **value stays off chain**,
+so the program holds no tokens and issues no transfers.
 
-Product model from `prototype/contracts/FeeTransparency.sol`, adapted to LEZ (Rust / RISC Zero / SPEL). Custody design: [`docs/custody.md`](../../docs/custody.md).
+Runs on `lee_core` v0.3.1 using the sharded `plan` / `apply` ABI: `plan` maps an
+instruction to one typed effect per mutated shard, and `apply` is the pure
+per-shard transition. No effect can read another shard, so every value that
+crosses a shard boundary is passed as an argument and validated by the shard
+that owns the data.
 
 ## Layout
 
 ```text
-fee_transparency/
-├── core/                 # Instruction enum, account types, PDA helpers
-├── src/                  # Pure state-transition handlers (+ chained Token calls)
-└── methods/
-    ├── build.rs
-    └── guest/            # #[lez_program] guest binary
+sacco_ledger/
+├── core/           # Instruction, Effect, record types, PDA helpers
+├── src/            # plan() + apply() shims and per-shard transitions
+├── idl/            # IDL table, generator and drift check
+└── methods/        # risc0 guest binary
 ```
 
 ## Instructions
 
 | Instruction | Purpose |
 |-------------|---------|
-| `Initialize` | Config PDA + Token Program id |
-| `RegisterInstitution` | Create institution registry account |
-| `VerifyInstitution` | Mark institution verified |
-| `InitializeInstitutionVault` | Bind fee token + vault PDA |
-| `AddApprover` | Register a multi-sig approver |
-| `CreateFeeCategory` | Category with basis-point allocation |
-| `PayFees` | Ledger + transfer payer holding → vault |
-| `RequestRelease` | Propose release with purpose/evidence |
-| `ApproveRelease` / `RejectRelease` | Multi-sig votes |
-| `ExecuteRelease` | Ledger + transfer vault → treasury holding |
+| `Initialize` | Program config shard |
+| `RegisterSacco` | Register a SACCO with its treasury |
+| `VerifySacco` | Registrar marks a SACCO verified |
+| `AddApprover` / `AddSupervisor` | Governance roles |
+| `AddMember` | Member account shard |
+| `RecordDeposit` / `ConfirmDeposit` | Savings or share-capital deposit, then member confirmation |
+| `ApplyLoan` / `ApproveLoan` / `RejectLoan` | Loan application with pinned approval threshold |
+| `DisburseLoan` | Marks the loan disbursed, carrying the principal for cross-checking |
+| `RecordRepayment` | Repayment against a loan |
+| `ProposeExpense` / `ApproveExpense` / `RejectExpense` | Expense proposal with pinned approval threshold |
+| `ExecuteExpense` | Marks the expense executed, carrying the amount for cross-checking |
+| `PostPeriodSummary` | Writes a period summary from caller-supplied totals |
 
-Prefer **public** LEZ accounts for payer-visible audit trails.
-
-## Custody (v1)
-
-- One **institution vault PDA** per `(institution, token_definition)`
-- Categories keep a **ledger** (collected / released)
-- `PayFees` / `ExecuteRelease` issue `Token::Transfer` chained calls
-- Guest `PayFees` accepts up to **8** category account slots
+Approval thresholds are pinned into `Loan` / `Expense` when they are created and
+validated against the live SACCO config at that moment, because the approval
+transition runs in a different shard from the config.
 
 ## IDL
 
-Checked-in client contract: [`artifacts/fee_transparency-idl.json`](../../artifacts/fee_transparency-idl.json). Regeneration notes: [`docs/idl.md`](../../docs/idl.md).
-
-## Build / test
-
-Requires the Logos LEZ + SPEL toolchains (see [lez-programs](https://github.com/logos-blockchain/lez-programs)).
+Generated, not hand-maintained: `artifacts/sacco_ledger-idl.json` is rendered
+from the single instruction table in `idl/src/lib.rs`, and CI fails when the
+committed artifact is stale.
 
 ```bash
 cd programs
-RISC0_DEV_MODE=1 cargo test -p fee_transparency_program
-
-cargo risczero build --manifest-path fee_transparency/methods/guest/Cargo.toml
+cargo run -p sacco_ledger_idl -- --check
 ```
 
-Deploy later with:
+## Build / test
 
 ```bash
-wallet deploy-program target/guest/fee_transparency.bin
+cd programs
+RISC0_DEV_MODE=1 cargo test -p sacco_ledger_program
+cargo test -p sacco_ledger_core -p sacco_ledger_idl
 ```
+
+Guest ELF without Docker (the `risc0` rustup toolchain carries the target):
+
+```bash
+cd programs/sacco_ledger/methods/guest
+cargo +risc0 build --release --target riscv32im-risc0-zkvm-elf
+```
+
+## Local deploy
+
+Built and deployed against a `logos-scaffold` 0.4.0 local sequencer on
+`lee_core` v0.3.1:
+
+```bash
+logos-scaffold localnet start
+logos-scaffold deploy --program-path \
+  programs/sacco_ledger/methods/guest/target/riscv32im-risc0-zkvm-elf/release/sacco_ledger --json
+```
+
+The deploy prints the risc0 image id for the guest ELF; record it here when it
+changes. Testnet deployment stays with issue #4 and
+[`docs/deploy.md`](../../docs/deploy.md).
 
 ## Known gaps
 
-1. `CreateFeeCategory` guest does not yet load existing categories for the 100% BPS cap (host API accepts `existing_categories`; wire in guest next).
-2. Refund path not implemented.
-3. `sacco_core` not yet submitting IDL txs (scaffold JSON only).
-4. Regenerate IDL with `spel`/`idl-gen` once the toolchain is installed and replace the hand-authored artifact if it drifts.
+1. `logos-scaffold` 0.4.0 exposes no transaction subcommand, so the `initialize`
+   call is deferred to the wallet/Basecamp path in `docs/deploy.md`.
+2. `sacco_core` does not submit IDL transactions yet.
+3. No refund path.

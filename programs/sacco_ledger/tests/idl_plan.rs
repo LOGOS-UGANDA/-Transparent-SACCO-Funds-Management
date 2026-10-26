@@ -2,11 +2,16 @@
 
 use nssa_core::account::AccountId;
 use nssa_core::program::{AccountMeta, PlanInput};
-use sacco_ledger_core::{DepositType, Instruction, Totals};
+use sacco_ledger_core::{compute_config_pda, DepositType, Instruction, Totals};
 use sacco_ledger_idl::INSTRUCTIONS;
 use sacco_ledger_program::plan;
 
 const PROGRAM: AccountId = AccountId::new([0xAA; 32]);
+
+#[test]
+fn initialize_config_pda_is_not_a_signer() {
+    assert!(!INSTRUCTIONS[0].accounts[0].signer);
+}
 
 fn samples() -> Vec<Instruction> {
     let id = AccountId::new([7; 32]);
@@ -77,8 +82,9 @@ fn idl_signer_flags_match_plan_authorization() {
             .iter()
             .enumerate()
             .map(|(slot, account)| {
-                let account_id = if spec.name == "record_deposit"
-                    && account.name == "member_account"
+                let account_id = if spec.name == "initialize" && account.name == "config" {
+                    compute_config_pda(PROGRAM)
+                } else if spec.name == "record_deposit" && account.name == "member_account"
                     || spec.name == "record_repayment" && account.name == "loan_account"
                 {
                     AccountId::new([7; 32])

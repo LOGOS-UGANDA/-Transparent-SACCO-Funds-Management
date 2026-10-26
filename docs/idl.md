@@ -6,29 +6,24 @@ The Interface Definition Language (IDL) describes `sacco_ledger` instructions, a
 
 | File | Meaning |
 |------|---------|
-| [`artifacts/sacco_ledger-idl.json`](../artifacts/sacco_ledger-idl.json) | Current IDL (hand-authored to match the SPEL guest) |
+| [`artifacts/sacco_ledger-idl.json`](../artifacts/sacco_ledger-idl.json) | Generated JSON artifact from the declarative Rust table in `programs/sacco_ledger/idl/src/lib.rs` |
 
-Treat this file as the client contract. When guest account lists or args change, update the IDL in the same change.
+The Rust table is hand-maintained and tested against the instruction enum and
+planner. The JSON is generated from that table. When an instruction, account,
+or argument changes, update the Rust table and its consistency tests in the
+same change.
 
 ## Regenerate (when toolchain is installed)
 
-From [lez-programs](https://github.com/logos-blockchain/lez-programs) style tooling:
+From the repository root, render the artifact with:
 
 ```bash
-# Prefer the repo's guest source as the source of truth
-spel generate-idl programs/sacco_ledger/methods/guest/src/bin/sacco_ledger.rs \
-  > artifacts/sacco_ledger-idl.json
+cd programs
+cargo run -p sacco_ledger_idl -- --out ../artifacts/sacco_ledger-idl.json
+cargo run -p sacco_ledger_idl -- --check
 ```
-
-Or, if using `idl-gen` from a Logos programs workspace:
-
-```bash
-cargo run -p idl-gen -- programs/sacco_ledger/methods/guest/src/bin/sacco_ledger.rs \
-  > artifacts/sacco_ledger-idl.json
-```
-
-Diff the generated file against the checked-in artifact and commit both guest + IDL together.
 
 ## Client usage (next)
 
-`modules/sacco_core` will call instructions via wallet/`spel --idl artifacts/sacco_ledger-idl.json ...` once custody flows are exercised on testnet. Until then, core methods return scaffold JSON only.
+The Basecamp `sacco_core` module uses the Logos wallet APIs and the Rust client
+helpers generated from the same ledger types; it does not shell out to `spel`.

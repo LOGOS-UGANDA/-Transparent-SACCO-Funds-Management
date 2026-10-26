@@ -135,15 +135,22 @@ fn arg_names_match_the_instruction_enum_fields() {
 }
 
 #[test]
-fn init_accounts_require_authorization() {
+fn init_accounts_require_signers_except_the_derived_config_pda() {
     for spec in INSTRUCTIONS {
         for account in spec.accounts {
             if account.init {
-                assert!(
-                    account.signer,
-                    "{}: init account '{}' must be signer/authorized so plan can claim it",
-                    spec.name, account.name
-                );
+                if spec.name == "initialize" && account.name == "config" {
+                    assert!(
+                        !account.signer,
+                        "the deterministic config PDA must not require a wallet signer"
+                    );
+                } else {
+                    assert!(
+                        account.signer,
+                        "{}: init account '{}' must be signer/authorized so plan can claim it",
+                        spec.name, account.name
+                    );
+                }
             }
         }
     }

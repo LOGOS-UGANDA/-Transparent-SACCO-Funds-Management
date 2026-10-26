@@ -116,7 +116,7 @@ fn period_labels_can_be_posted_out_of_order() {
 
 #[test]
 #[should_panic(expected = "Period label was already posted")]
-fn an_older_period_cannot_be_reposted_after_a_newer_one() {
+fn a_period_label_cannot_be_reposted_after_a_newer_label() {
     let mut ledger = Ledger::new();
     funded(&mut ledger);
     let snapshot = totals(&ledger);

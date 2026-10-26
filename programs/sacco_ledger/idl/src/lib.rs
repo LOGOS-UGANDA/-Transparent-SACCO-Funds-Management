@@ -63,7 +63,7 @@ const NOTES: &[&str] = &[
     "Attestation model: the program records and approves off-chain money events; it holds no value and no token transfers occur.",
     "Unit variants (verify_sacco, confirm_deposit, approve/reject loan and expense) carry no args; arg names match the Instruction enum fields exactly.",
     "Approval thresholds are pinned into loans and expenses at creation and validated against the live SACCO config, because an effect cannot read another shard.",
-    "Accounts with init: true require authorization (signer: true) so plan can claim the empty shard.",
+    "Accounts with init: true require authorization (signer: true) so plan can claim the empty shard, except config: initialize validates its deterministic program-derived address instead.",
     "In v1 verify_sacco is self-verification by the SACCO admin.",
 ];
 
@@ -74,7 +74,7 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
         accounts: &[AccountSpec {
             name: "config",
             writable: true,
-            signer: true,
+            signer: false,
             init: true,
         }],
         args: NONE,

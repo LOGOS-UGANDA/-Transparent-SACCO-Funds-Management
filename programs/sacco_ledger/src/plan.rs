@@ -5,7 +5,7 @@ use sacco_ledger_core::effect::{
     ConfigEffect, DepositEffect, Effect, ExpenseEffect, LoanEffect, MemberEffect, SaccoEffect,
     SummaryEffect,
 };
-use sacco_ledger_core::{Deposit, Instruction};
+use sacco_ledger_core::{compute_config_pda, Deposit, Instruction};
 
 /// The registry layout version this build writes and expects.
 pub const CONFIG_VERSION: u8 = 1;
@@ -24,7 +24,11 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
         Instruction::Initialize => {
             let [config] = <&[_; 1]>::try_from(input.accounts.as_slice())
                 .expect("Initialize requires exactly 1 account");
-            assert!(config.is_authorized, "Config account must be authorized");
+            assert_eq!(
+                config.account_id,
+                compute_config_pda(input.self_account_id),
+                "Config account must match the program-derived address"
+            );
             plan.effect(
                 config,
                 &Effect::Config(ConfigEffect::Init {

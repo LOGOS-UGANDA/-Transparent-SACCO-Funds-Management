@@ -1,0 +1,145 @@
+//! In-memory sequencer: runs `plan`, then applies each effect in order.
+#![allow(
+    dead_code,
+    reason = "each integration test binary uses a subset of the harness"
+)]
+
+use std::collections::BTreeMap;
+
+use borsh::BorshDeserialize;
+use nssa_core::account::AccountId;
+use nssa_core::program::{AccountMeta, PlanInput};
+use sacco_ledger_core::codec::{decode, encode};
+use sacco_ledger_core::effect::Effect;
+use sacco_ledger_core::{
+    Deposit, Expense, Instruction, Loan, Member, PeriodSummary, ProgramConfig, Sacco,
+};
+use sacco_ledger_program::{apply, plan};
+
+/// The program's own account id in every test.
+pub const PROGRAM: AccountId = AccountId::new([0xAA; 32]);
+/// A different program, used to prove shard ownership is enforced.
+pub const OTHER_PROGRAM: AccountId = AccountId::new([0xBB; 32]);
+
+/// An account id derived from a single byte, e.g. `aid(6)` is the member.
+#[must_use]
+pub fn aid(n: u8) -> AccountId {
+    AccountId::new([n; 32])
+}
+
+/// A writable, authorized, program-owned account handle.
+#[must_use]
+pub fn meta(id: AccountId) -> AccountMeta {
+    AccountMeta::new(id, true, PROGRAM)
+}
+
+/// A read-only, authorized account handle.
+#[must_use]
+pub fn readonly(id: AccountId) -> AccountMeta {
+    AccountMeta::new(id, false, PROGRAM)
+}
+
+/// An account handle whose shard belongs to a different program.
+#[must_use]
+pub fn foreign(id: AccountId) -> AccountMeta {
+    AccountMeta::new(id, true, OTHER_PROGRAM)
+}
+
+/// An account handle whose signer flag is false.
+#[must_use]
+pub fn unsigned(id: AccountId) -> AccountMeta {
+    AccountMeta::new(id, false, PROGRAM)
+}
+
+/// Shard state after executing instructions.
+#[derive(Default)]
+pub struct Ledger {
+    shards: BTreeMap<AccountId, Vec<u8>>,
+}
+
+impl Ledger {
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Runs `plan`, then applies every emitted effect, exactly as the sequencer does.
+    pub fn execute(&mut self, accounts: &[AccountMeta], instruction: Instruction) {
+        let input = PlanInput {
+            self_account_id: PROGRAM,
+            caller_account_id: None,
+            accounts: accounts.to_vec(),
+            instruction_data: encode(&instruction),
+        };
+        let planned = plan(&input, instruction);
+        for shard_effect in planned.output().effects.clone() {
+            let selector = shard_effect.selector;
+            assert_eq!(
+                selector.program_account_id, PROGRAM,
+                "effect names a shard this program does not own"
+            );
+            assert!(
+                accounts.iter().any(|a| a.account_id == selector.account_id
+                    && a.program_account_id == selector.program_account_id),
+                "effect names an account the plan did not receive"
+            );
+            let effect: Effect =
+                decode(&shard_effect.data).expect("planned effect must Borsh-decode");
+            let pre = self
+                .shards
+                .get(&selector.account_id)
+                .cloned()
+                .unwrap_or_default();
+            if let Some(post) = apply(effect, &pre) {
+                self.shards.insert(selector.account_id, post);
+            }
+        }
+    }
+
+    #[must_use]
+    pub fn raw(&self, id: AccountId) -> Vec<u8> {
+        self.shards.get(&id).cloned().unwrap_or_default()
+    }
+
+    #[must_use]
+    pub fn decode<T: BorshDeserialize>(&self, id: AccountId) -> Option<T> {
+        self.shards.get(&id).map(|bytes| {
+            decode(bytes).unwrap_or_else(|_| panic!("account {id} does not hold the expected data"))
+        })
+    }
+
+    #[must_use]
+    pub fn config(&self, id: AccountId) -> ProgramConfig {
+        self.decode(id).expect("config account")
+    }
+
+    #[must_use]
+    pub fn sacco(&self, id: AccountId) -> Sacco {
+        self.decode(id).expect("sacco account")
+    }
+
+    #[must_use]
+    pub fn member(&self, id: AccountId) -> Member {
+        self.decode(id).expect("member account")
+    }
+
+    #[must_use]
+    pub fn deposit(&self, id: AccountId) -> Deposit {
+        self.decode(id).expect("deposit account")
+    }
+
+    #[must_use]
+    pub fn loan(&self, id: AccountId) -> Loan {
+        self.decode(id).expect("loan account")
+    }
+
+    #[must_use]
+    pub fn expense(&self, id: AccountId) -> Expense {
+        self.decode(id).expect("expense account")
+    }
+
+    #[must_use]
+    pub fn summary(&self, id: AccountId) -> PeriodSummary {
+        self.decode(id).expect("summary account")
+    }
+}

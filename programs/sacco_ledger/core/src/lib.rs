@@ -2,21 +2,25 @@
 //!
 //! The program is the record, not the custodian: value stays in mobile money and bank
 //! accounts, and the chain attests to deposits, loans and expenses with multi-signature
-//! approval. Account data uses Borsh. Instructions use serde (SPEL / wallet path).
-//!
-//! The earlier university fee-transparency custody model (vault PDA + category ledger)
-//! is kept dormant in [`custody`] — reference code, not dispatched by the active
-//! instruction set.
+//! approval. Account data uses Borsh in per-account shards. Instructions use serde for
+//! the wallet JSON path and Borsh for the guest ABI.
 
-pub mod custody;
+pub mod codec;
+pub mod effect;
+pub mod transition;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use nssa_core::account::AccountId;
 use serde::{Deserialize, Serialize};
-use spel_framework_macros::account_type;
+
+/// Registry layout version written by `Initialize`.
+pub type ProgramConfigVersion = u8;
+
+pub use nssa_core::account::AccountId;
 
 /// Deposit record type: withdrawable savings vs member ownership (share capital).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+)]
 #[borsh(use_discriminant = true)]
 pub enum DepositType {
     Savings = 0,
@@ -24,7 +28,9 @@ pub enum DepositType {
 }
 
 /// Loan lifecycle state: `Applied -> Approved/Rejected -> Disbursed -> Repaid`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+)]
 #[borsh(use_discriminant = true)]
 pub enum LoanStatus {
     Applied = 0,
@@ -35,7 +41,9 @@ pub enum LoanStatus {
 }
 
 /// Expense lifecycle state: `Proposed -> Approved/Rejected -> Executed`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+)]
 #[borsh(use_discriminant = true)]
 pub enum ExpenseStatus {
     Proposed = 0,
@@ -45,7 +53,6 @@ pub enum ExpenseStatus {
 }
 
 /// A SACCO institution: public registration, totals and per-SACCO approver config.
-#[account_type]
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Sacco {
     pub name: String,
@@ -74,9 +81,37 @@ pub struct Sacco {
     pub member_ids: Vec<AccountId>,
 }
 
+impl Sacco {
+    /// A newly registered SACCO: one approver (the admin) and threshold 1.
+    #[must_use]
+    pub fn register(
+        name: String,
+        registration_number: String,
+        treasury: AccountId,
+        admin: AccountId,
+    ) -> Self {
+        Self {
+            name,
+            registration_number,
+            admin,
+            treasury,
+            is_verified: false,
+            is_active: true,
+            total_deposits_savings: 0,
+            total_deposits_share_capital: 0,
+            total_loans_disbursed: 0,
+            total_loans_repaid: 0,
+            total_expenses: 0,
+            required_approvals: 1,
+            approvers: vec![admin],
+            supervisory_committee: vec![],
+            member_ids: vec![],
+        }
+    }
+}
+
 /// A SACCO member: balances are public in Phase 1 and move to private accounts in the
 /// privacy phase; the type is shaped so member data can move behind private accounts.
-#[account_type]
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Member {
     pub sacco_id: AccountId,
@@ -87,7 +122,6 @@ pub struct Member {
 }
 
 /// A recorded deposit: attests to off-chain money received for a member.
-#[account_type]
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Deposit {
     pub sacco_id: AccountId,
@@ -103,7 +137,6 @@ pub struct Deposit {
 }
 
 /// A member loan: applied, multi-sig approved, disbursed with evidence, repaid.
-#[account_type]
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Loan {
     pub sacco_id: AccountId,
@@ -120,7 +153,6 @@ pub struct Loan {
 }
 
 /// A SACCO expense: proposed, multi-sig approved, executed by recording the off-chain release.
-#[account_type]
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Expense {
     pub sacco_id: AccountId,
@@ -137,7 +169,6 @@ pub struct Expense {
 }
 
 /// Period snapshot of SACCO totals, posted by the treasurer and public for members.
-#[account_type]
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct PeriodSummary {
     pub sacco_id: AccountId,
@@ -149,7 +180,6 @@ pub struct PeriodSummary {
     pub loans_repaid: u128,
     pub expenses: u128,
 }
-
 
 /// SACCO ledger instructions. Account lists are documented per variant; handlers live
 /// in `sacco_ledger_program`. The attestation model: value never moves on chain —
@@ -320,7 +350,6 @@ pub enum Instruction {
 const CONFIG_PDA_SEED: &[u8] = b"CONFIG";
 
 /// Singleton config stored at the `"CONFIG"` PDA.
-#[account_type]
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct ProgramConfig {
     /// Bumped when the registry layout changes; lets clients detect version.
@@ -344,33 +373,3 @@ pub fn compute_config_pda_seed() -> nssa_core::program::PdaSeed {
 pub fn compute_config_pda(program_account_id: AccountId) -> AccountId {
     AccountId::for_public_pda(&program_account_id, &compute_config_pda_seed())
 }
-
-macro_rules! impl_data_codec {
-    ($ty:ty) => {
-        impl TryFrom<&nssa_core::account::Data> for $ty {
-            type Error = std::io::Error;
-
-            fn try_from(data: &nssa_core::account::Data) -> Result<Self, Self::Error> {
-                <$ty>::try_from_slice(data.as_ref())
-            }
-        }
-
-        impl From<&$ty> for nssa_core::account::Data {
-            fn from(value: &$ty) -> Self {
-                let mut data = Vec::with_capacity(std::mem::size_of_val(value));
-                BorshSerialize::serialize(value, &mut data)
-                    .expect("Serialization to Vec should not fail");
-                nssa_core::account::Data::try_from(data)
-                    .expect("encoded account data should fit into Data")
-            }
-        }
-    };
-}
-
-impl_data_codec!(Sacco);
-impl_data_codec!(Member);
-impl_data_codec!(Deposit);
-impl_data_codec!(Loan);
-impl_data_codec!(Expense);
-impl_data_codec!(PeriodSummary);
-impl_data_codec!(ProgramConfig);

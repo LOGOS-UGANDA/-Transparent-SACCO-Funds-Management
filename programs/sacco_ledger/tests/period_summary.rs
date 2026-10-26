@@ -1,92 +1,171 @@
-//! Period summary integration tests.
+//! Period snapshots: a public, validated copy of the SACCO totals.
 
-use nssa_core::account::{Account, AccountId, AccountWithMetadata};
-use sacco_ledger_program::{
-    add_member::add_member, post_period_summary::post_period_summary,
-    record_deposit::record_deposit, register_sacco::register_sacco, verify_sacco::verify_sacco,
-};
-use sacco_ledger_core::{DepositType, PeriodSummary};
+mod support;
 
-fn blank_account(id: u8) -> AccountWithMetadata {
-    AccountWithMetadata {
-        account_id: AccountId::new([id; 32]),
-        account: Account::default(),
-        is_authorized: true,
-    }
-}
+use sacco_ledger_core::{DepositType, Instruction};
+use support::{add_verified_member, aid, meta, totals, verified_sacco, Ledger};
 
-fn aid(n: u8) -> AccountId {
-    AccountId::new([n; 32])
-}
-
-fn post_of(diffs: &[nssa_core::program::AccountStateDiff], i: usize) -> nssa_core::account::Data {
-    diffs[i]
-        .post_data
-        .as_ref()
-        .unwrap_or_else(|| panic!("post data missing at index {i}"))
-        .clone()
-}
-
-/// Verified SACCO (admin approver) with a savings deposit of 100_000 recorded.
-fn sacco_with_deposit() -> (AccountWithMetadata, AccountWithMetadata) {
-    let mut sacco_account = blank_account(1);
-    let admin = blank_account(2);
-    let diffs = register_sacco(
-        sacco_account.clone(),
-        admin.clone(),
-        "Kampala Traders SACCO".into(),
-        "UG-SACCO-001".into(),
-        aid(9),
+fn funded(ledger: &mut Ledger) {
+    verified_sacco(ledger);
+    add_verified_member(ledger, aid(6));
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(aid(7)), meta(aid(2))],
+        Instruction::RecordDeposit {
+            member: aid(6),
+            amount: 75_000,
+            deposit_type: DepositType::Savings,
+            reference: "MPZA-1".into(),
+        },
     );
-    sacco_account.account.data = post_of(&diffs, 0);
-    let diffs = verify_sacco(sacco_account.clone(), admin.clone());
-    sacco_account.account.data = post_of(&diffs, 0);
-
-    // Register the member, then record a deposit against it.
-    let member_account = blank_account(6);
-    let diffs = add_member(sacco_account.clone(), member_account, admin.clone(), aid(6));
-    sacco_account.account.data = post_of(&diffs, 0);
-
-    let member_account = blank_account(6);
-    let mut member_account2 = blank_account(6);
-    member_account2.account.data = post_of(&diffs, 1);
-    let deposit_account = blank_account(7);
-    let diffs = record_deposit(
-        sacco_account.clone(),
-        member_account2,
-        deposit_account,
-        admin.clone(),
-        aid(6),
-        100_000,
-        DepositType::Savings,
-        "MPZA-3001".into(),
-    );
-    sacco_account.account.data = post_of(&diffs, 0);
-    let _ = member_account;
-    (sacco_account, admin)
 }
 
 #[test]
 fn post_period_summary_snapshots_totals() {
-    let (sacco_account, admin) = sacco_with_deposit();
-    let diffs = post_period_summary(
-        sacco_account.clone(),
-        blank_account(8),
-        admin,
-        "2026-11".into(),
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let snapshot = totals(&ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(10)), meta(aid(2))],
+        Instruction::PostPeriodSummary {
+            label: "2026-11".into(),
+            totals: snapshot,
+        },
     );
-    let summary =
-        PeriodSummary::try_from(diffs[1].post_data.as_ref().expect("summary")).expect("summary");
+    let summary = ledger.summary(aid(10));
+    assert_eq!(summary.sacco_id, aid(1));
     assert_eq!(summary.label, "2026-11");
-    assert_eq!(summary.deposits_savings, 100_000);
+    assert_eq!(summary.deposits_savings, 75_000);
     assert_eq!(summary.deposits_share_capital, 0);
-    assert_eq!(summary.loans_disbursed, 0);
-    assert_eq!(summary.expenses, 0);
 }
 
 #[test]
 #[should_panic(expected = "Not a SACCO approver")]
 fn post_period_summary_rejects_non_approver() {
-    let (sacco_account, _admin) = sacco_with_deposit();
-    let _ = post_period_summary(sacco_account, blank_account(8), blank_account(8), "2026-11".into());
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let snapshot = totals(&ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(10)), meta(aid(5))],
+        Instruction::PostPeriodSummary {
+            label: "2026-11".into(),
+            totals: snapshot,
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Totals do not match the SACCO's live totals")]
+fn post_period_summary_rejects_a_stale_snapshot() {
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let stale = totals(&ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(aid(11)), meta(aid(2))],
+        Instruction::RecordDeposit {
+            member: aid(6),
+            amount: 1_000,
+            deposit_type: DepositType::Savings,
+            reference: "MPZA-2".into(),
+        },
+    );
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(10)), meta(aid(2))],
+        Instruction::PostPeriodSummary {
+            label: "2026-11".into(),
+            totals: stale,
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Period label must use YYYY-MM format")]
+fn post_period_summary_rejects_invalid_label() {
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let snapshot = totals(&ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(10)), meta(aid(2))],
+        Instruction::PostPeriodSummary {
+            label: "2026-13".into(),
+            totals: snapshot,
+        },
+    );
+}
+
+#[test]
+fn period_labels_can_be_posted_out_of_order() {
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let snapshot = totals(&ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(10)), meta(aid(2))],
+        Instruction::PostPeriodSummary {
+            label: "2026-11".into(),
+            totals: snapshot,
+        },
+    );
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(11)), meta(aid(2))],
+        Instruction::PostPeriodSummary {
+            label: "2026-10".into(),
+            totals: snapshot,
+        },
+    );
+    assert_eq!(ledger.summary(aid(11)).label, "2026-10");
+}
+
+#[test]
+#[should_panic(expected = "Period label was already posted")]
+fn a_period_label_cannot_be_reposted_after_a_newer_label() {
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let snapshot = totals(&ledger);
+    for (summary, label) in [
+        (aid(10), "2026-11"),
+        (aid(11), "2026-12"),
+        (aid(12), "2026-11"),
+    ] {
+        ledger.execute(
+            &[meta(aid(1)), meta(summary), meta(aid(2))],
+            Instruction::PostPeriodSummary {
+                label: label.into(),
+                totals: snapshot,
+            },
+        );
+    }
+}
+
+#[test]
+#[should_panic(expected = "Period label was already posted")]
+fn a_period_label_cannot_be_posted_twice() {
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let snapshot = totals(&ledger);
+    for summary in [aid(10), aid(11)] {
+        ledger.execute(
+            &[meta(aid(1)), meta(summary), meta(aid(2))],
+            Instruction::PostPeriodSummary {
+                label: "2026-11".into(),
+                totals: snapshot,
+            },
+        );
+    }
+}
+
+#[test]
+#[should_panic(expected = "Period summary limit reached")]
+fn summary_history_has_a_fixed_limit() {
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let mut sacco = ledger.sacco(aid(1));
+    sacco.period_labels = vec!["2000-01".into(); sacco_ledger_core::MAX_PERIOD_SUMMARIES];
+    ledger.put(aid(1), &sacco);
+    let snapshot = totals(&ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(200)), meta(aid(2))],
+        Instruction::PostPeriodSummary {
+            label: "2026-11".into(),
+            totals: snapshot,
+        },
+    );
 }

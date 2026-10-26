@@ -1,0 +1,14 @@
+[package]
+name = "sacco_ledger_idl"
+version = "0.1.0"
+edition = "2021"
+
+[lints]
+workspace = true
+
+[dependencies]
+sacco_ledger_core = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+borsh = { workspace = true }

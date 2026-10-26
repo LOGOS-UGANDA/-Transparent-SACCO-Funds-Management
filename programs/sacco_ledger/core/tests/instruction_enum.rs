@@ -1,68 +1,70 @@
-//! Instruction-enum contract test: all variants serde-roundtrip.
+//! Every instruction survives the Borsh round trip used by the wallet path.
 
-use nssa_core::account::AccountId;
-use sacco_ledger_core::{DepositType, Instruction};
+use sacco_ledger_core::{AccountId, DepositType, Instruction, Totals};
 
-fn aid(n: u8) -> AccountId {
-    AccountId::new([n; 32])
-}
-
-fn roundtrip(instruction: Instruction) -> Instruction {
-    let json = serde_json::to_string(&instruction).expect("serialize");
-    serde_json::from_str(&json).expect("deserialize")
+fn round_trip(instruction: Instruction) {
+    let bytes = borsh::to_vec(&instruction).expect("encode");
+    let decoded: Instruction = borsh::from_slice(&bytes).expect("decode");
+    assert_eq!(decoded, instruction);
 }
 
 #[test]
-fn instruction_enum_roundtrips_all_variants() {
-    let cases = vec![
+fn every_variant_round_trips() {
+    let id = AccountId::new([7; 32]);
+    for instruction in [
         Instruction::Initialize,
         Instruction::RegisterSacco {
             name: "Kampala Traders SACCO".into(),
             registration_number: "UG-SACCO-001".into(),
-            treasury: aid(1),
+            treasury: id,
         },
         Instruction::VerifySacco,
-        Instruction::AddApprover { approver: aid(2) },
-        Instruction::AddSupervisor { supervisor: aid(3) },
-        Instruction::AddMember { identity: aid(4) },
+        Instruction::AddApprover { approver: id },
+        Instruction::AddSupervisor { supervisor: id },
+        Instruction::AddMember { identity: id },
         Instruction::RecordDeposit {
-            member: aid(5),
-            amount: 250_000,
+            member: id,
+            amount: 1,
             deposit_type: DepositType::Savings,
-            reference: "MPZA-99182".into(),
+            reference: "MPZA-1".into(),
         },
         Instruction::ConfirmDeposit,
         Instruction::ApplyLoan {
-            amount: 150_000,
-            purpose: "School fees".into(),
+            amount: 1,
+            purpose: "school fees".into(),
+            required_approvals: 2,
         },
         Instruction::ApproveLoan,
         Instruction::RejectLoan,
         Instruction::DisburseLoan {
-            evidence_cid: "bafy-disburse".into(),
+            evidence_cid: "cid".into(),
+            principal: 1,
         },
         Instruction::RecordRepayment {
-            loan: aid(6),
-            amount: 50_000,
-            reference: "MPZA-99200".into(),
+            loan: id,
+            amount: 1,
+            reference: "MPZA-2".into(),
         },
         Instruction::ProposeExpense {
-            amount: 75_000,
-            purpose: "Stationery for the AGM".into(),
-            evidence_cid: "bafy-expense".into(),
+            amount: 1,
+            purpose: "desk".into(),
+            evidence_cid: "cid".into(),
+            required_approvals: 2,
         },
         Instruction::ApproveExpense,
         Instruction::RejectExpense,
         Instruction::ExecuteExpense {
-            executed_evidence: "bafy-execution".into(),
+            executed_evidence: "receipt".into(),
+            amount: 1,
         },
         Instruction::PostPeriodSummary {
             label: "2026-11".into(),
+            totals: Totals::default(),
         },
-    ];
-
-    assert_eq!(cases.len(), 18, "the instruction set is pinned at 18 variants");
-    for instruction in cases {
-        assert_eq!(roundtrip(instruction.clone()), instruction);
+        Instruction::SetRequiredApprovals {
+            required_approvals: 2,
+        },
+    ] {
+        round_trip(instruction);
     }
 }

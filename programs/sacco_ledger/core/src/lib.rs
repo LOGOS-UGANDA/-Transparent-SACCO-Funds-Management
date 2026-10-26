@@ -2,21 +2,51 @@
 //!
 //! The program is the record, not the custodian: value stays in mobile money and bank
 //! accounts, and the chain attests to deposits, loans and expenses with multi-signature
-//! approval. Account data uses Borsh. Instructions use serde (SPEL / wallet path).
-//!
-//! The earlier university fee-transparency custody model (vault PDA + category ledger)
-//! is kept dormant in [`custody`] — reference code, not dispatched by the active
-//! instruction set.
+//! approval. Account data uses Borsh in per-account shards. Instructions use serde for
+//! the wallet JSON path and Borsh for the guest ABI.
 
-pub mod custody;
+pub mod codec;
+pub mod effect;
+pub mod transition;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use nssa_core::account::AccountId;
 use serde::{Deserialize, Serialize};
-use spel_framework_macros::account_type;
+
+/// Registry layout version written by `Initialize`.
+pub type ProgramConfigVersion = u8;
+
+pub use nssa_core::account::AccountId;
+
+/// Bounded role/member collections keep individual account shards within a
+/// predictable size. Larger deployments need registry shards before raising these.
+pub const MAX_SACCO_MEMBERS: usize = 128;
+pub const MAX_APPROVERS: usize = 32;
+pub const MAX_SUPERVISORS: usize = 32;
+pub const MAX_MEMBER_LOANS: usize = 128;
+pub const MAX_PERIOD_SUMMARIES: usize = 128;
+
+/// True for canonical, sortable calendar-month labels such as `2026-11`.
+pub(crate) fn is_valid_period_label(label: &str) -> bool {
+    let bytes = label.as_bytes();
+    if bytes.len() != 7
+        || bytes[4] != b'-'
+        || !bytes[..4].iter().all(u8::is_ascii_digit)
+        || !bytes[5..].iter().all(u8::is_ascii_digit)
+    {
+        return false;
+    }
+
+    let year = bytes[..4]
+        .iter()
+        .fold(0_u16, |year, digit| year * 10 + u16::from(*digit - b'0'));
+    let month = u16::from(bytes[5] - b'0') * 10 + u16::from(bytes[6] - b'0');
+    year > 0 && (1..=12).contains(&month)
+}
 
 /// Deposit record type: withdrawable savings vs member ownership (share capital).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+)]
 #[borsh(use_discriminant = true)]
 pub enum DepositType {
     Savings = 0,
@@ -24,7 +54,9 @@ pub enum DepositType {
 }
 
 /// Loan lifecycle state: `Applied -> Approved/Rejected -> Disbursed -> Repaid`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+)]
 #[borsh(use_discriminant = true)]
 pub enum LoanStatus {
     Applied = 0,
@@ -35,7 +67,9 @@ pub enum LoanStatus {
 }
 
 /// Expense lifecycle state: `Proposed -> Approved/Rejected -> Executed`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+)]
 #[borsh(use_discriminant = true)]
 pub enum ExpenseStatus {
     Proposed = 0,
@@ -45,8 +79,7 @@ pub enum ExpenseStatus {
 }
 
 /// A SACCO institution: public registration, totals and per-SACCO approver config.
-#[account_type]
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Sacco {
     pub name: String,
     pub registration_number: String,
@@ -65,6 +98,8 @@ pub struct Sacco {
     pub total_loans_repaid: u128,
     /// Total expenses executed (recorded release of off-chain funds).
     pub total_expenses: u128,
+    /// Posted periods, retained to reject duplicate summary labels.
+    pub period_labels: Vec<String>,
     /// Multi-sig threshold for loans and expenses, configured per SACCO.
     pub required_approvals: u8,
     /// Approvers (treasurer and committee members) allowed to record and approve.
@@ -74,10 +109,45 @@ pub struct Sacco {
     pub member_ids: Vec<AccountId>,
 }
 
+impl Sacco {
+    /// A newly registered SACCO: one approver (the admin) and threshold 1.
+    #[must_use]
+    pub fn register(
+        name: String,
+        registration_number: String,
+        treasury: AccountId,
+        admin: AccountId,
+    ) -> Self {
+        Self {
+            name,
+            registration_number,
+            admin,
+            treasury,
+            is_verified: false,
+            is_active: true,
+            total_deposits_savings: 0,
+            total_deposits_share_capital: 0,
+            total_loans_disbursed: 0,
+            total_loans_repaid: 0,
+            total_expenses: 0,
+            period_labels: vec![],
+            required_approvals: 1,
+            approvers: vec![admin],
+            supervisory_committee: vec![],
+            member_ids: vec![],
+        }
+    }
+}
+
+/// True when `id` is one of the SACCO's multi-sig approvers.
+#[must_use]
+pub fn is_approver(sacco: &Sacco, id: &AccountId) -> bool {
+    sacco.approvers.contains(id)
+}
+
 /// A SACCO member: balances are public in Phase 1 and move to private accounts in the
 /// privacy phase; the type is shaped so member data can move behind private accounts.
-#[account_type]
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Member {
     pub sacco_id: AccountId,
     pub identity: AccountId,
@@ -87,8 +157,7 @@ pub struct Member {
 }
 
 /// A recorded deposit: attests to off-chain money received for a member.
-#[account_type]
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Deposit {
     pub sacco_id: AccountId,
     pub member_id: AccountId,
@@ -103,11 +172,12 @@ pub struct Deposit {
 }
 
 /// A member loan: applied, multi-sig approved, disbursed with evidence, repaid.
-#[account_type]
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Loan {
     pub sacco_id: AccountId,
     pub member_id: AccountId,
+    /// Identity that signed the application; cannot approve or reject its own loan.
+    pub applicant: AccountId,
     pub principal: u128,
     pub purpose: String,
     pub status: LoanStatus,
@@ -117,11 +187,12 @@ pub struct Loan {
     pub evidence_cid: Option<String>,
     /// Accumulated repayments; capped at principal.
     pub repaid_amount: u128,
+    /// Multi-sig threshold pinned when the loan was applied.
+    pub required_approvals: u8,
 }
 
 /// A SACCO expense: proposed, multi-sig approved, executed by recording the off-chain release.
-#[account_type]
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Expense {
     pub sacco_id: AccountId,
     pub amount: u128,
@@ -134,11 +205,12 @@ pub struct Expense {
     pub rejectors: Vec<AccountId>,
     /// Evidence recorded at execution: proof the off-chain payment happened.
     pub executed_evidence: Option<String>,
+    /// Multi-sig threshold pinned when the expense was proposed.
+    pub required_approvals: u8,
 }
 
 /// Period snapshot of SACCO totals, posted by the treasurer and public for members.
-#[account_type]
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct PeriodSummary {
     pub sacco_id: AccountId,
     /// Period label, e.g. `2026-11`.
@@ -150,6 +222,56 @@ pub struct PeriodSummary {
     pub expenses: u128,
 }
 
+/// The SACCO's five public aggregate totals, as one portable value.
+#[derive(
+    Debug,
+    Default,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    BorshSerialize,
+    BorshDeserialize,
+)]
+pub struct Totals {
+    pub deposits_savings: u128,
+    pub deposits_share_capital: u128,
+    pub loans_disbursed: u128,
+    pub loans_repaid: u128,
+    pub expenses: u128,
+}
+
+impl Totals {
+    /// Reads the totals out of a SACCO account.
+    #[must_use]
+    pub fn of(sacco: &Sacco) -> Self {
+        Self {
+            deposits_savings: sacco.total_deposits_savings,
+            deposits_share_capital: sacco.total_deposits_share_capital,
+            loans_disbursed: sacco.total_loans_disbursed,
+            loans_repaid: sacco.total_loans_repaid,
+            expenses: sacco.total_expenses,
+        }
+    }
+}
+
+impl PeriodSummary {
+    /// A snapshot of `totals` for `sacco` under `label`.
+    #[must_use]
+    pub fn new(sacco_id: AccountId, label: String, totals: Totals) -> Self {
+        Self {
+            sacco_id,
+            label,
+            deposits_savings: totals.deposits_savings,
+            deposits_share_capital: totals.deposits_share_capital,
+            loans_disbursed: totals.loans_disbursed,
+            loans_repaid: totals.loans_repaid,
+            expenses: totals.expenses,
+        }
+    }
+}
 
 /// SACCO ledger instructions. Account lists are documented per variant; handlers live
 /// in `sacco_ledger_program`. The attestation model: value never moves on chain —
@@ -173,11 +295,11 @@ pub enum Instruction {
         treasury: AccountId,
     },
 
-    /// Mark a SACCO verified (protocol / registrar authority).
+    /// Mark a SACCO verified. In v1 the SACCO admin self-verifies.
     ///
     /// Accounts:
     /// - Sacco account (mut)
-    /// - Registrar account (signer)
+    /// - Admin account (signer)
     VerifySacco,
 
     /// Add a multi-sig approver (treasurer or committee member).
@@ -221,7 +343,8 @@ pub enum Instruction {
     /// Accounts:
     /// - Sacco account
     /// - Deposit account (mut)
-    /// - Member account (signer)
+    /// - Member account (read-only)
+    /// - Member identity account (signer)
     ConfirmDeposit,
 
     /// Member applies for a loan.
@@ -231,7 +354,12 @@ pub enum Instruction {
     /// - Member account (mut)
     /// - Loan account (uninitialized, authorized)
     /// - Member identity account (signer)
-    ApplyLoan { amount: u128, purpose: String },
+    ApplyLoan {
+        amount: u128,
+        purpose: String,
+        /// The threshold the SACCO had when the loan was applied.
+        required_approvals: u8,
+    },
 
     /// Committee multi-sig approval of a loan.
     ///
@@ -256,7 +384,11 @@ pub enum Instruction {
     /// - Member account (mut)
     /// - Loan account (mut)
     /// - Approver account (signer)
-    DisburseLoan { evidence_cid: String },
+    DisburseLoan {
+        evidence_cid: String,
+        /// The loan principal, re-asserted so the owning shard can validate it.
+        principal: u128,
+    },
 
     /// Record a loan repayment (off-chain transfer) against a disbursed loan.
     ///
@@ -281,6 +413,8 @@ pub enum Instruction {
         amount: u128,
         purpose: String,
         evidence_cid: String,
+        /// The threshold the SACCO had when the expense was proposed.
+        required_approvals: u8,
     },
 
     /// Committee multi-sig approval of a proposed expense.
@@ -305,7 +439,11 @@ pub enum Instruction {
     /// - Sacco account (mut)
     /// - Expense account (mut)
     /// - Approver account (signer)
-    ExecuteExpense { executed_evidence: String },
+    ExecuteExpense {
+        executed_evidence: String,
+        /// The expense amount, re-asserted so the owning shard can validate it.
+        amount: u128,
+    },
 
     /// Post a period summary snapshot of SACCO totals (public for members).
     ///
@@ -313,15 +451,25 @@ pub enum Instruction {
     /// - Sacco account
     /// - Period summary account (uninitialized, authorized)
     /// - Approver account (signer)
-    PostPeriodSummary { label: String },
+    PostPeriodSummary {
+        label: String,
+        /// The totals snapshot, re-asserted so the SACCO shard can validate it.
+        totals: Totals,
+    },
+
+    /// Change the approval threshold for new loans and expenses.
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Admin account (signer)
+    SetRequiredApprovals { required_approvals: u8 },
 }
 
 /// Seed for the singleton config PDA.
 const CONFIG_PDA_SEED: &[u8] = b"CONFIG";
 
 /// Singleton config stored at the `"CONFIG"` PDA.
-#[account_type]
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct ProgramConfig {
     /// Bumped when the registry layout changes; lets clients detect version.
     pub version: u8,
@@ -344,33 +492,3 @@ pub fn compute_config_pda_seed() -> nssa_core::program::PdaSeed {
 pub fn compute_config_pda(program_account_id: AccountId) -> AccountId {
     AccountId::for_public_pda(&program_account_id, &compute_config_pda_seed())
 }
-
-macro_rules! impl_data_codec {
-    ($ty:ty) => {
-        impl TryFrom<&nssa_core::account::Data> for $ty {
-            type Error = std::io::Error;
-
-            fn try_from(data: &nssa_core::account::Data) -> Result<Self, Self::Error> {
-                <$ty>::try_from_slice(data.as_ref())
-            }
-        }
-
-        impl From<&$ty> for nssa_core::account::Data {
-            fn from(value: &$ty) -> Self {
-                let mut data = Vec::with_capacity(std::mem::size_of_val(value));
-                BorshSerialize::serialize(value, &mut data)
-                    .expect("Serialization to Vec should not fail");
-                nssa_core::account::Data::try_from(data)
-                    .expect("encoded account data should fit into Data")
-            }
-        }
-    };
-}
-
-impl_data_codec!(Sacco);
-impl_data_codec!(Member);
-impl_data_codec!(Deposit);
-impl_data_codec!(Loan);
-impl_data_codec!(Expense);
-impl_data_codec!(PeriodSummary);
-impl_data_codec!(ProgramConfig);

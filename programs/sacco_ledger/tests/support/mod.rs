@@ -96,6 +96,27 @@ impl Ledger {
         }
     }
 
+    /// A verified SACCO with `admin` as its sole approver.
+    pub fn verified_sacco(&mut self, sacco: AccountId, admin: AccountId) {
+        self.execute(
+            &[meta(sacco), meta(admin)],
+            Instruction::RegisterSacco {
+                name: "Kampala Traders SACCO".into(),
+                registration_number: "UG-SACCO-001".into(),
+                treasury: aid(9),
+            },
+        );
+        self.execute(&[meta(sacco), meta(admin)], Instruction::VerifySacco);
+    }
+
+    /// A member of `sacco`, created by `admin`.
+    pub fn add_member(&mut self, sacco: AccountId, admin: AccountId, member: AccountId) {
+        self.execute(
+            &[meta(sacco), meta(member), meta(admin)],
+            Instruction::AddMember { identity: member },
+        );
+    }
+
     #[must_use]
     pub fn raw(&self, id: AccountId) -> Vec<u8> {
         self.shards.get(&id).cloned().unwrap_or_default()

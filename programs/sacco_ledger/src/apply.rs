@@ -8,5 +8,7 @@ use sacco_ledger_core::transition;
 pub fn apply(effect: Effect, pre: &[u8]) -> Option<Vec<u8>> {
     match effect {
         Effect::Config(effect) => transition::config::apply(effect, pre),
+        Effect::Sacco(effect) => transition::sacco::apply(effect, pre),
+        Effect::Member(effect) => transition::member::apply(effect, pre),
     }
 }

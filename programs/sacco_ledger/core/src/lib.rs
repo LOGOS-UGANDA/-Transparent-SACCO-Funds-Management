@@ -110,6 +110,12 @@ impl Sacco {
     }
 }
 
+/// True when `id` is one of the SACCO's multi-sig approvers.
+#[must_use]
+pub fn is_approver(sacco: &Sacco, id: &AccountId) -> bool {
+    sacco.approvers.contains(id)
+}
+
 /// A SACCO member: balances are public in Phase 1 and move to private accounts in the
 /// privacy phase; the type is shaped so member data can move behind private accounts.
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]

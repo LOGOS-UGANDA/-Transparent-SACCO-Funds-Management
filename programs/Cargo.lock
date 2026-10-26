@@ -2782,6 +2782,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sacco_ledger_idl"
+version = "0.1.0"
+dependencies = [
+ "sacco_ledger_core",
+ "serde_json",
+]
+
+[[package]]
 name = "sacco_ledger_program"
 version = "0.1.0"
 dependencies = [

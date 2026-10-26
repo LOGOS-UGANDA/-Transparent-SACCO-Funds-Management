@@ -1,34 +1,40 @@
 {
-  "version": "0.2.0",
-  "name": "sacco_ledger",
+  "account_types": [
+    "Sacco",
+    "Member",
+    "Deposit",
+    "Loan",
+    "Expense",
+    "PeriodSummary",
+    "ProgramConfig"
+  ],
   "description": "Transparent SACCO attestation ledger: deposits, loans and expenses recorded and approved on chain; value stays off chain. Regenerated from the sacco_ledger_core::Instruction enum (borsh + serde).",
   "instructions": [
     {
-      "name": "initialize",
       "accounts": [
         {
+          "init": true,
           "name": "config",
-          "writable": true,
           "signer": false,
-          "init": true
+          "writable": true
         }
       ],
-      "args": []
+      "args": [],
+      "name": "initialize"
     },
     {
-      "name": "register_sacco",
       "accounts": [
         {
+          "init": true,
           "name": "sacco",
-          "writable": true,
           "signer": false,
-          "init": true
+          "writable": true
         },
         {
+          "init": false,
           "name": "admin",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
       "args": [
@@ -44,127 +50,127 @@
           "name": "treasury",
           "type": "account_id"
         }
-      ]
+      ],
+      "name": "register_sacco"
     },
     {
-      "name": "verify_sacco",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": false,
           "name": "registrar",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
-      "args": []
+      "args": [],
+      "name": "verify_sacco"
     },
     {
-      "name": "add_approver",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": false,
           "name": "admin",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
       "args": [
         {
-          "name": "approver",
+          "name": "id",
           "type": "account_id"
         }
-      ]
+      ],
+      "name": "add_approver"
     },
     {
-      "name": "add_supervisor",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": false,
           "name": "admin",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
       "args": [
         {
-          "name": "supervisor",
+          "name": "id",
           "type": "account_id"
         }
-      ]
+      ],
+      "name": "add_supervisor"
     },
     {
-      "name": "add_member",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": true,
           "name": "member",
-          "writable": true,
           "signer": false,
-          "init": true
+          "writable": true
         },
         {
+          "init": false,
           "name": "admin",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
       "args": [
         {
-          "name": "identity",
+          "name": "id",
           "type": "account_id"
         }
-      ]
+      ],
+      "name": "add_member"
     },
     {
-      "name": "record_deposit",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
-          "name": "member",
-          "writable": true,
+          "init": false,
+          "name": "member_account",
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": true,
           "name": "deposit",
-          "writable": true,
           "signer": false,
-          "init": true
+          "writable": true
         },
         {
+          "init": false,
           "name": "recorder",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
       "args": [
@@ -189,52 +195,52 @@
           "name": "reference",
           "type": "string"
         }
-      ]
+      ],
+      "name": "record_deposit"
     },
     {
-      "name": "confirm_deposit",
       "accounts": [
         {
+          "init": false,
           "name": "deposit",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": false,
           "name": "member",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
-      "args": []
+      "args": [],
+      "name": "confirm_deposit"
     },
     {
-      "name": "apply_loan",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
-          "name": "member",
-          "writable": true,
+          "init": false,
+          "name": "member_account",
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": true,
           "name": "loan",
-          "writable": true,
           "signer": false,
-          "init": true
+          "writable": true
         },
         {
+          "init": false,
           "name": "member_signer",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
       "args": [
@@ -245,118 +251,126 @@
         {
           "name": "purpose",
           "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "approve_loan",
-      "accounts": [
-        {
-          "name": "sacco",
-          "writable": false,
-          "signer": false,
-          "init": false
         },
         {
-          "name": "loan",
-          "writable": true,
-          "signer": false,
-          "init": false
-        },
-        {
-          "name": "approver",
-          "writable": false,
-          "signer": true,
-          "init": false
+          "name": "required_approvals",
+          "type": "u8"
         }
       ],
-      "args": []
+      "name": "apply_loan"
     },
     {
-      "name": "reject_loan",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": false,
           "signer": false,
-          "init": false
+          "writable": false
         },
         {
+          "init": false,
           "name": "loan",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": false,
           "name": "approver",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
-      "args": []
+      "args": [],
+      "name": "approve_loan"
     },
     {
-      "name": "disburse_loan",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": false
         },
         {
-          "name": "member",
-          "writable": false,
-          "signer": false,
-          "init": false
-        },
-        {
+          "init": false,
           "name": "loan",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": false,
           "name": "approver",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
+        }
+      ],
+      "args": [],
+      "name": "reject_loan"
+    },
+    {
+      "accounts": [
+        {
+          "init": false,
+          "name": "sacco",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "init": false,
+          "name": "member_account",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "init": false,
+          "name": "loan",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "init": false,
+          "name": "approver",
+          "signer": true,
+          "writable": false
         }
       ],
       "args": [
         {
           "name": "evidence_cid",
           "type": "string"
+        },
+        {
+          "name": "principal",
+          "type": "u128"
         }
-      ]
+      ],
+      "name": "disburse_loan"
     },
     {
-      "name": "record_repayment",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
-          "name": "member",
-          "writable": false,
+          "init": false,
+          "name": "member_account",
           "signer": false,
-          "init": false
+          "writable": false
         },
         {
-          "name": "loan",
-          "writable": true,
+          "init": false,
+          "name": "loan_account",
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": false,
           "name": "approver",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
       "args": [
@@ -372,28 +386,28 @@
           "name": "reference",
           "type": "string"
         }
-      ]
+      ],
+      "name": "record_repayment"
     },
     {
-      "name": "propose_expense",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": false,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": true,
           "name": "expense",
-          "writable": true,
           "signer": false,
-          "init": true
+          "writable": true
         },
         {
+          "init": false,
           "name": "proposer",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
       "args": [
@@ -408,128 +422,134 @@
         {
           "name": "evidence_cid",
           "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "approve_expense",
-      "accounts": [
-        {
-          "name": "sacco",
-          "writable": false,
-          "signer": false,
-          "init": false
         },
         {
-          "name": "expense",
-          "writable": true,
-          "signer": false,
-          "init": false
-        },
-        {
-          "name": "approver",
-          "writable": false,
-          "signer": true,
-          "init": false
+          "name": "required_approvals",
+          "type": "u8"
         }
       ],
-      "args": []
+      "name": "propose_expense"
     },
     {
-      "name": "reject_expense",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": false,
           "signer": false,
-          "init": false
+          "writable": false
         },
         {
+          "init": false,
           "name": "expense",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": false,
           "name": "approver",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
-      "args": []
+      "args": [],
+      "name": "approve_expense"
     },
     {
-      "name": "execute_expense",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": false
         },
         {
+          "init": false,
           "name": "expense",
-          "writable": true,
           "signer": false,
-          "init": false
+          "writable": true
         },
         {
+          "init": false,
           "name": "approver",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
+        }
+      ],
+      "args": [],
+      "name": "reject_expense"
+    },
+    {
+      "accounts": [
+        {
+          "init": false,
+          "name": "sacco",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "init": false,
+          "name": "expense",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "init": false,
+          "name": "approver",
+          "signer": true,
+          "writable": false
         }
       ],
       "args": [
         {
           "name": "executed_evidence",
           "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "u128"
         }
-      ]
+      ],
+      "name": "execute_expense"
     },
     {
-      "name": "post_period_summary",
       "accounts": [
         {
+          "init": false,
           "name": "sacco",
-          "writable": false,
           "signer": false,
-          "init": false
+          "writable": false
         },
         {
+          "init": true,
           "name": "summary",
-          "writable": true,
           "signer": false,
-          "init": true
+          "writable": true
         },
         {
+          "init": false,
           "name": "poster",
-          "writable": false,
           "signer": true,
-          "init": false
+          "writable": false
         }
       ],
       "args": [
         {
           "name": "label",
           "type": "string"
+        },
+        {
+          "name": "totals",
+          "type": "totals"
         }
-      ]
+      ],
+      "name": "post_period_summary"
     }
   ],
-  "account_types": [
-    "Sacco",
-    "Member",
-    "Deposit",
-    "Loan",
-    "Expense",
-    "PeriodSummary",
-    "ProgramConfig"
-  ],
+  "name": "sacco_ledger",
   "notes": [
     "Attestation model: the program records and approves off-chain money events; it holds no value and no token transfers occur.",
     "Unit variants (verify_sacco, confirm_deposit, approve/reject loan and expense) carry no args; arg names match the Instruction enum fields exactly.",
-    "The dormant custody model (institution vault, PayFees, category ledger) is reference code under programs/sacco_ledger/src/custody and core::custody."
-  ]
+    "Approval thresholds are pinned into loans and expenses at creation and validated against the live SACCO config, because an effect cannot read another shard."
+  ],
+  "version": "0.2.0"
 }

@@ -2,6 +2,7 @@
 members = [
     "sacco_ledger/core",
     "sacco_ledger",
+    "sacco_ledger/idl",
     "sacco_ledger/methods",
 ]
 exclude = [

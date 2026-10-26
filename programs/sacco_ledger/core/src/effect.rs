@@ -77,8 +77,13 @@ pub enum SaccoEffect {
         amount: u128,
     },
     HoldTotals {
+        label: String,
         totals: Totals,
         poster: AccountId,
+    },
+    SetRequiredApprovals {
+        admin: AccountId,
+        required_approvals: u8,
     },
 }
 
@@ -91,12 +96,16 @@ pub enum MemberEffect {
     },
     RecordDeposit {
         sacco: AccountId,
+        recorder: AccountId,
         amount: u128,
         deposit_type: DepositType,
     },
     AttachLoan {
         sacco: AccountId,
         loan: AccountId,
+        signer: AccountId,
+    },
+    AuthorizeIdentity {
         signer: AccountId,
     },
 }

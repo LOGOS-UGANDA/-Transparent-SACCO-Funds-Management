@@ -2,7 +2,7 @@
 
 use crate::codec::{decode, encode};
 use crate::effect::LoanEffect;
-use crate::{Loan, LoanStatus};
+use crate::{Loan, LoanStatus, MAX_APPROVERS};
 
 /// Applies a loan effect to the loan shard.
 ///
@@ -57,6 +57,10 @@ pub fn apply(effect: LoanEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 !loan.rejectors.contains(&approver),
                 "Already rejected by this approver"
             );
+            assert!(
+                loan.approvals.len() < MAX_APPROVERS,
+                "Approval limit reached"
+            );
             loan.approvals.push(approver);
             if loan.approvals.len() >= usize::from(loan.required_approvals) {
                 loan.status = LoanStatus::Approved;
@@ -82,6 +86,10 @@ pub fn apply(effect: LoanEffect, pre: &[u8]) -> Option<Vec<u8>> {
             assert!(
                 !loan.approvals.contains(&approver),
                 "Approver already approved this loan"
+            );
+            assert!(
+                loan.rejectors.len() < MAX_APPROVERS,
+                "Rejection limit reached"
             );
             loan.rejectors.push(approver);
             loan.status = LoanStatus::Rejected;

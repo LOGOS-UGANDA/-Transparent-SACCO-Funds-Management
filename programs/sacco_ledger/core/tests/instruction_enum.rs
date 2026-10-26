@@ -61,6 +61,9 @@ fn every_variant_round_trips() {
             label: "2026-11".into(),
             totals: Totals::default(),
         },
+        Instruction::SetRequiredApprovals {
+            required_approvals: 2,
+        },
     ] {
         round_trip(instruction);
     }

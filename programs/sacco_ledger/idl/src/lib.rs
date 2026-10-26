@@ -254,7 +254,13 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
                 init: false,
             },
             AccountSpec {
-                name: "member",
+                name: "member_account",
+                writable: false,
+                signer: false,
+                init: false,
+            },
+            AccountSpec {
+                name: "member_signer",
                 writable: false,
                 signer: true,
                 init: false,
@@ -562,7 +568,7 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
         accounts: &[
             AccountSpec {
                 name: "sacco",
-                writable: false,
+                writable: true,
                 signer: false,
                 init: false,
             },
@@ -590,6 +596,27 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
             },
         ],
     },
+    InstructionSpec {
+        name: "set_required_approvals",
+        accounts: &[
+            AccountSpec {
+                name: "sacco",
+                writable: true,
+                signer: false,
+                init: false,
+            },
+            AccountSpec {
+                name: "admin",
+                writable: false,
+                signer: true,
+                init: false,
+            },
+        ],
+        args: &[ArgSpec {
+            name: "required_approvals",
+            ty: ArgType::Scalar("u8"),
+        }],
+    },
 ];
 
 /// The IDL name of an instruction. Exhaustive on purpose: a new variant will
@@ -601,6 +628,7 @@ pub fn variant_name(instruction: &Instruction) -> &'static str {
         Instruction::RegisterSacco { .. } => "register_sacco",
         Instruction::VerifySacco => "verify_sacco",
         Instruction::AddApprover { .. } => "add_approver",
+        Instruction::SetRequiredApprovals { .. } => "set_required_approvals",
         Instruction::AddSupervisor { .. } => "add_supervisor",
         Instruction::AddMember { .. } => "add_member",
         Instruction::RecordDeposit { .. } => "record_deposit",

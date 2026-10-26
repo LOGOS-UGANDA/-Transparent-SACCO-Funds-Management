@@ -2,7 +2,7 @@
 
 mod support;
 
-use sacco_ledger_core::{Instruction, LoanStatus};
+use sacco_ledger_core::{Instruction, LoanStatus, MAX_MEMBER_LOANS};
 use support::{aid, applied_loan, disbursed_loan, meta, two_approver_sacco, Ledger};
 
 #[test]
@@ -19,6 +19,21 @@ fn apply_loan_creates_applied_loan() {
     assert_eq!(loan.required_approvals, 2);
     assert!(loan.approvals.is_empty());
     assert!(ledger.member(aid(6)).loan_ids.contains(&aid(7)));
+}
+
+#[test]
+#[should_panic(expected = "Only the member can apply for their loan")]
+fn only_member_identity_can_apply_for_its_loan() {
+    let mut ledger = Ledger::new();
+    two_approver_sacco(&mut ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(aid(7)), meta(aid(8))],
+        Instruction::ApplyLoan {
+            amount: 100_000,
+            purpose: "school fees".into(),
+            required_approvals: 2,
+        },
+    );
 }
 
 #[test]
@@ -133,6 +148,42 @@ fn disburse_loan_requires_evidence() {
 }
 
 #[test]
+#[should_panic(expected = "Loan must be approved before disbursement")]
+fn disburse_loan_must_be_approved_first() {
+    let mut ledger = Ledger::new();
+    two_approver_sacco(&mut ledger);
+    applied_loan(&mut ledger, aid(7));
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(aid(7)), meta(aid(2))],
+        Instruction::DisburseLoan {
+            evidence_cid: "bafy-cid".into(),
+            principal: 200_000,
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Principal does not match the loan")]
+fn disbursement_principal_must_match_the_loan() {
+    let mut ledger = Ledger::new();
+    two_approver_sacco(&mut ledger);
+    applied_loan(&mut ledger, aid(7));
+    for approver in [aid(2), aid(3)] {
+        ledger.execute(
+            &[meta(aid(1)), meta(aid(7)), meta(approver)],
+            Instruction::ApproveLoan,
+        );
+    }
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(aid(7)), meta(aid(2))],
+        Instruction::DisburseLoan {
+            evidence_cid: "bafy-cid".into(),
+            principal: 200_001,
+        },
+    );
+}
+
+#[test]
 fn record_repayment_updates_outstanding_and_totals() {
     let mut ledger = Ledger::new();
     two_approver_sacco(&mut ledger);
@@ -215,5 +266,110 @@ fn another_sacco_cannot_approve_this_loan() {
     ledger.execute(
         &[meta(aid(20)), meta(aid(7)), meta(aid(5))],
         Instruction::ApproveLoan,
+    );
+}
+
+#[test]
+#[should_panic(expected = "Loan belongs to a different SACCO")]
+fn another_sacco_cannot_reject_this_loan() {
+    let mut ledger = Ledger::new();
+    two_approver_sacco(&mut ledger);
+    applied_loan(&mut ledger, aid(7));
+    ledger.verified_sacco(aid(20), aid(5));
+    ledger.set_approvers(aid(20), &[aid(5)], 1);
+    ledger.execute(
+        &[meta(aid(20)), meta(aid(7)), meta(aid(5))],
+        Instruction::RejectLoan,
+    );
+}
+
+#[test]
+#[should_panic(expected = "Loan belongs to a different SACCO")]
+fn another_sacco_cannot_disburse_this_loan() {
+    let mut ledger = Ledger::new();
+    two_approver_sacco(&mut ledger);
+    applied_loan(&mut ledger, aid(7));
+    for approver in [aid(2), aid(3)] {
+        ledger.execute(
+            &[meta(aid(1)), meta(aid(7)), meta(approver)],
+            Instruction::ApproveLoan,
+        );
+    }
+    ledger.verified_sacco(aid(20), aid(5));
+    ledger.set_approvers(aid(20), &[aid(5)], 1);
+    ledger.execute(
+        &[meta(aid(20)), meta(aid(6)), meta(aid(7)), meta(aid(5))],
+        Instruction::DisburseLoan {
+            evidence_cid: "bafy-cid".into(),
+            principal: 200_000,
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Loan belongs to a different SACCO")]
+fn another_sacco_cannot_record_repayment_for_this_loan() {
+    let mut ledger = Ledger::new();
+    two_approver_sacco(&mut ledger);
+    disbursed_loan(&mut ledger, aid(7));
+    ledger.verified_sacco(aid(20), aid(5));
+    ledger.set_approvers(aid(20), &[aid(5)], 1);
+    ledger.execute(
+        &[meta(aid(20)), meta(aid(6)), meta(aid(7)), meta(aid(5))],
+        Instruction::RecordRepayment {
+            loan: aid(7),
+            amount: 1,
+            reference: "MPZA-OTHER".into(),
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Member belongs to a different SACCO")]
+fn member_cannot_apply_for_a_loan_from_another_sacco() {
+    let mut ledger = Ledger::new();
+    two_approver_sacco(&mut ledger);
+    ledger.verified_sacco(aid(20), aid(5));
+    ledger.set_approvers(aid(20), &[aid(5)], 1);
+    ledger.execute(
+        &[meta(aid(20)), meta(aid(6)), meta(aid(7)), meta(aid(6))],
+        Instruction::ApplyLoan {
+            amount: 100_000,
+            purpose: "school fees".into(),
+            required_approvals: 1,
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Member loan limit reached")]
+fn member_loan_list_has_a_fixed_limit() {
+    let mut ledger = Ledger::new();
+    two_approver_sacco(&mut ledger);
+    let mut member = ledger.member(aid(6));
+    member.loan_ids = vec![aid(7); MAX_MEMBER_LOANS];
+    ledger.put(aid(6), &member);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(aid(8)), meta(aid(6))],
+        Instruction::ApplyLoan {
+            amount: 100_000,
+            purpose: "school fees".into(),
+            required_approvals: 2,
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Approver threshold does not match the SACCO configuration")]
+fn loan_threshold_must_match_sacco_configuration() {
+    let mut ledger = Ledger::new();
+    two_approver_sacco(&mut ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(aid(7)), meta(aid(6))],
+        Instruction::ApplyLoan {
+            amount: 100_000,
+            purpose: "school fees".into(),
+            required_approvals: 1,
+        },
     );
 }

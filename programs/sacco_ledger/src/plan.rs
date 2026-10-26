@@ -66,6 +66,18 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
                 &Effect::Sacco(SaccoEffect::AddApprover { admin, approver }),
             );
         }
+        Instruction::SetRequiredApprovals { required_approvals } => {
+            let [sacco, admin] = <&[_; 2]>::try_from(input.accounts.as_slice())
+                .expect("SetRequiredApprovals requires sacco and admin");
+            let admin = signer(admin, "Admin must authorize");
+            plan.effect(
+                sacco,
+                &Effect::Sacco(SaccoEffect::SetRequiredApprovals {
+                    admin,
+                    required_approvals,
+                }),
+            );
+        }
         Instruction::AddSupervisor { supervisor } => {
             let [sacco, admin] = <&[_; 2]>::try_from(input.accounts.as_slice())
                 .expect("AddSupervisor requires sacco and admin");
@@ -120,6 +132,7 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
                 member_account,
                 &Effect::Member(MemberEffect::RecordDeposit {
                     sacco: sacco.account_id,
+                    recorder,
                     amount,
                     deposit_type,
                 }),
@@ -138,10 +151,20 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
             );
         }
         Instruction::ConfirmDeposit => {
-            let [deposit, member] = <&[_; 2]>::try_from(input.accounts.as_slice())
-                .expect("ConfirmDeposit requires deposit and member");
-            let member = signer(member, "Member must authorize confirmation");
-            plan.effect(deposit, &Effect::Deposit(DepositEffect::Confirm { member }));
+            let [deposit, member_account, member_signer] =
+                <&[_; 3]>::try_from(input.accounts.as_slice())
+                    .expect("ConfirmDeposit requires deposit, member and member signer");
+            let signer = signer(member_signer, "Member must authorize confirmation");
+            plan.effect(
+                member_account,
+                &Effect::Member(MemberEffect::AuthorizeIdentity { signer }),
+            );
+            plan.effect(
+                deposit,
+                &Effect::Deposit(DepositEffect::Confirm {
+                    member: member_account.account_id,
+                }),
+            );
         }
         Instruction::ApplyLoan {
             amount,
@@ -353,7 +376,11 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
             let poster = signer(poster, "Poster must authorize");
             plan.effect(
                 sacco,
-                &Effect::Sacco(SaccoEffect::HoldTotals { totals, poster }),
+                &Effect::Sacco(SaccoEffect::HoldTotals {
+                    label: label.clone(),
+                    totals,
+                    poster,
+                }),
             );
             plan.effect(
                 summary,
@@ -364,6 +391,14 @@ pub fn plan(input: &PlanInput, instruction: Instruction) -> Plan {
                 }),
             );
         }
+    }
+    let mut effected_accounts = Vec::new();
+    for effect in &plan.output().effects {
+        assert!(
+            !effected_accounts.contains(&effect.selector.account_id),
+            "Instruction cannot apply multiple effects to the same account"
+        );
+        effected_accounts.push(effect.selector.account_id);
     }
     plan
 }

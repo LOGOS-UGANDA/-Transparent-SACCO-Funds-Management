@@ -2,7 +2,7 @@
 
 use crate::codec::encode;
 use crate::effect::SummaryEffect;
-use crate::PeriodSummary;
+use crate::{is_valid_period_label, PeriodSummary};
 
 /// Applies a summary effect to the summary shard.
 #[must_use]
@@ -14,7 +14,10 @@ pub fn apply(effect: SummaryEffect, pre: &[u8]) -> Option<Vec<u8>> {
             totals,
         } => {
             assert!(pre.is_empty(), "Summary account must be uninitialized");
-            assert!(!label.is_empty(), "Period label must not be empty");
+            assert!(
+                is_valid_period_label(&label),
+                "Period label must use YYYY-MM format"
+            );
             Some(encode(&PeriodSummary::new(sacco, label, totals)))
         }
     }

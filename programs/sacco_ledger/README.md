@@ -28,6 +28,7 @@ sacco_ledger/
 | `RegisterSacco` | Register a SACCO with its treasury |
 | `VerifySacco` | Admin self-verifies the SACCO (v1) |
 | `AddApprover` / `AddSupervisor` | Governance roles |
+| `SetRequiredApprovals` | Admin sets a threshold from 2 through one less than the approver count |
 | `AddMember` | Member account shard |
 | `RecordDeposit` / `ConfirmDeposit` | Savings or share-capital deposit, then member confirmation |
 | `ApplyLoan` / `ApproveLoan` / `RejectLoan` | Loan application with pinned approval threshold |
@@ -40,6 +41,18 @@ sacco_ledger/
 Approval thresholds are pinned into `Loan` / `Expense` when they are created and
 validated against the live SACCO config at that moment, because the approval
 transition runs in a different shard from the config.
+
+New SACCOs start with a threshold of one for setup. Before presenting the
+ledger as multi-signature, the admin must add at least two more approvers and
+set the threshold to at least two. The upper bound leaves enough approvers to
+approve an expense after excluding its proposer. Any non-proposer approver
+rejection is an immediate veto. Period summary labels must use the canonical
+`YYYY-MM` calendar-month format, and a month cannot be posted twice.
+To keep Borsh shard sizes bounded in this release, each SACCO supports at most
+128 members, 32 approvers and 32 supervisors, and each member can reference at
+most 128 loans. Each SACCO can retain 128 unique period summaries. Approval and
+rejection lists are bounded by the 32-approver limit. Larger deployments need
+registry shards before these limits are raised.
 
 ## IDL
 

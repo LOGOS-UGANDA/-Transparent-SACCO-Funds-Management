@@ -12,3 +12,4 @@ sacco_ledger_core = { workspace = true }
 
 [dev-dependencies]
 borsh = { workspace = true }
+sacco_ledger_idl = { path = "idl" }

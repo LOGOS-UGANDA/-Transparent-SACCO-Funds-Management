@@ -2,7 +2,10 @@
 
 use crate::codec::{decode, encode};
 use crate::effect::SaccoEffect;
-use crate::{is_approver, DepositType, Sacco};
+use crate::{
+    is_approver, is_valid_period_label, DepositType, Sacco, MAX_APPROVERS, MAX_PERIOD_SUMMARIES,
+    MAX_SACCO_MEMBERS, MAX_SUPERVISORS,
+};
 
 /// Applies a SACCO effect to the SACCO shard.
 #[must_use]
@@ -30,16 +33,17 @@ pub fn apply(effect: SaccoEffect, pre: &[u8]) -> Option<Vec<u8>> {
         SaccoEffect::Verify { admin } => {
             let mut sacco = decode_sacco(pre);
             assert!(sacco.is_active, "Sacco must be active");
-            assert_eq!(
-                sacco.admin, admin,
-                "Only the SACCO admin can verify in v1"
-            );
+            assert_eq!(sacco.admin, admin, "Only the SACCO admin can verify in v1");
             sacco.is_verified = true;
             Some(encode(&sacco))
         }
         SaccoEffect::AddApprover { admin, approver } => {
             let mut sacco = decode_sacco(pre);
             assert_eq!(sacco.admin, admin, "Only the SACCO admin can add approvers");
+            assert!(
+                sacco.approvers.len() < MAX_APPROVERS,
+                "Approver limit reached"
+            );
             assert!(
                 !sacco.approvers.contains(&approver),
                 "Approver already registered"
@@ -51,11 +55,29 @@ pub fn apply(effect: SaccoEffect, pre: &[u8]) -> Option<Vec<u8>> {
             sacco.approvers.push(approver);
             Some(encode(&sacco))
         }
+        SaccoEffect::SetRequiredApprovals {
+            admin,
+            required_approvals,
+        } => {
+            let mut sacco = decode_sacco(pre);
+            assert_eq!(sacco.admin, admin, "Only the SACCO admin can set approvals");
+            assert!(
+                usize::from(required_approvals) >= 2
+                    && usize::from(required_approvals) <= sacco.approvers.len().saturating_sub(1),
+                "Threshold must be between 2 and one less than the approver count"
+            );
+            sacco.required_approvals = required_approvals;
+            Some(encode(&sacco))
+        }
         SaccoEffect::AddSupervisor { admin, supervisor } => {
             let mut sacco = decode_sacco(pre);
             assert_eq!(
                 sacco.admin, admin,
                 "Only the SACCO admin can add supervisors"
+            );
+            assert!(
+                sacco.supervisory_committee.len() < MAX_SUPERVISORS,
+                "Supervisor limit reached"
             );
             assert!(
                 !sacco.supervisory_committee.contains(&supervisor),
@@ -71,6 +93,10 @@ pub fn apply(effect: SaccoEffect, pre: &[u8]) -> Option<Vec<u8>> {
         SaccoEffect::AddMember { admin, identity } => {
             let mut sacco = decode_sacco(pre);
             assert_eq!(sacco.admin, admin, "Only the SACCO admin can add members");
+            assert!(
+                sacco.member_ids.len() < MAX_SACCO_MEMBERS,
+                "Member limit reached"
+            );
             assert!(
                 !sacco.member_ids.contains(&identity),
                 "Member identity already registered"
@@ -169,16 +195,33 @@ pub fn apply(effect: SaccoEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 .expect("expense total overflow");
             Some(encode(&sacco))
         }
-        SaccoEffect::HoldTotals { totals, poster } => {
-            let sacco = decode_sacco(pre);
+        SaccoEffect::HoldTotals {
+            label,
+            totals,
+            poster,
+        } => {
+            let mut sacco = decode_sacco(pre);
             assert!(sacco.is_verified, "Sacco is not verified");
             assert!(is_approver(&sacco, &poster), "Not a SACCO approver");
+            assert!(
+                is_valid_period_label(&label),
+                "Period label must use YYYY-MM format"
+            );
+            assert!(
+                !sacco.period_labels.contains(&label),
+                "Period label was already posted"
+            );
+            assert!(
+                sacco.period_labels.len() < MAX_PERIOD_SUMMARIES,
+                "Period summary limit reached"
+            );
             assert_eq!(
                 totals,
                 crate::Totals::of(&sacco),
                 "Totals do not match the SACCO's live totals"
             );
-            None
+            sacco.period_labels.push(label);
+            Some(encode(&sacco))
         }
     }
 }

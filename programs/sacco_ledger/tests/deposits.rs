@@ -130,18 +130,24 @@ fn confirm_deposit_flips_member_confirmation() {
     verified_sacco(&mut ledger);
     add_verified_member(&mut ledger, aid(6));
     record(&mut ledger, 7);
-    ledger.execute(&[meta(aid(7)), meta(aid(6))], Instruction::ConfirmDeposit);
+    ledger.execute(
+        &[meta(aid(7)), meta(aid(6)), meta(aid(6))],
+        Instruction::ConfirmDeposit,
+    );
     assert!(ledger.deposit(aid(7)).confirmed_by_member);
 }
 
 #[test]
-#[should_panic(expected = "Only the deposit's member can confirm")]
+#[should_panic(expected = "Only the member can confirm their deposit")]
 fn confirm_deposit_member_only() {
     let mut ledger = Ledger::new();
     verified_sacco(&mut ledger);
     add_verified_member(&mut ledger, aid(6));
     record(&mut ledger, 7);
-    ledger.execute(&[meta(aid(7)), meta(aid(3))], Instruction::ConfirmDeposit);
+    ledger.execute(
+        &[meta(aid(7)), meta(aid(6)), meta(aid(3))],
+        Instruction::ConfirmDeposit,
+    );
 }
 
 #[test]
@@ -151,6 +157,58 @@ fn confirm_deposit_rejects_double_confirm() {
     verified_sacco(&mut ledger);
     add_verified_member(&mut ledger, aid(6));
     record(&mut ledger, 7);
-    ledger.execute(&[meta(aid(7)), meta(aid(6))], Instruction::ConfirmDeposit);
-    ledger.execute(&[meta(aid(7)), meta(aid(6))], Instruction::ConfirmDeposit);
+    ledger.execute(
+        &[meta(aid(7)), meta(aid(6)), meta(aid(6))],
+        Instruction::ConfirmDeposit,
+    );
+    ledger.execute(
+        &[meta(aid(7)), meta(aid(6)), meta(aid(6))],
+        Instruction::ConfirmDeposit,
+    );
+}
+
+#[test]
+fn only_the_member_identity_can_confirm_a_deposit() {
+    let mut ledger = Ledger::new();
+    verified_sacco(&mut ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(aid(2))],
+        Instruction::AddMember { identity: aid(16) },
+    );
+    record(&mut ledger, 7);
+
+    ledger.execute(
+        &[meta(aid(7)), meta(aid(6)), meta(aid(16))],
+        Instruction::ConfirmDeposit,
+    );
+    assert!(ledger.deposit(aid(7)).confirmed_by_member);
+}
+
+#[test]
+#[should_panic(expected = "Only the member can confirm their deposit")]
+fn member_account_key_cannot_confirm_instead_of_identity() {
+    let mut ledger = Ledger::new();
+    verified_sacco(&mut ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(aid(2))],
+        Instruction::AddMember { identity: aid(16) },
+    );
+    record(&mut ledger, 7);
+
+    ledger.execute(
+        &[meta(aid(7)), meta(aid(6)), meta(aid(6))],
+        Instruction::ConfirmDeposit,
+    );
+}
+
+#[test]
+#[should_panic(expected = "A member cannot record their own deposit")]
+fn recorder_cannot_record_a_deposit_to_their_own_member_account() {
+    let mut ledger = Ledger::new();
+    verified_sacco(&mut ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(6)), meta(aid(2))],
+        Instruction::AddMember { identity: aid(2) },
+    );
+    record(&mut ledger, 7);
 }

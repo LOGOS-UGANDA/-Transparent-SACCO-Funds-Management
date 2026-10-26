@@ -2,7 +2,7 @@
 
 use crate::codec::{decode, encode};
 use crate::effect::ExpenseEffect;
-use crate::{Expense, ExpenseStatus};
+use crate::{Expense, ExpenseStatus, MAX_APPROVERS};
 
 /// Applies an expense effect to the expense shard.
 ///
@@ -62,6 +62,10 @@ pub fn apply(effect: ExpenseEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 !expense.rejectors.contains(&approver),
                 "Already rejected by this approver"
             );
+            assert!(
+                expense.approvers.len() < MAX_APPROVERS,
+                "Approval limit reached"
+            );
             expense.approvers.push(approver);
             if expense.approvers.len() >= usize::from(expense.required_approvals) {
                 expense.status = ExpenseStatus::Approved;
@@ -79,6 +83,10 @@ pub fn apply(effect: ExpenseEffect, pre: &[u8]) -> Option<Vec<u8>> {
                 ExpenseStatus::Proposed,
                 "Expense is not proposed"
             );
+            assert_ne!(
+                approver, expense.requested_by,
+                "Proposer cannot reject their own expense"
+            );
             assert!(
                 !expense.rejectors.contains(&approver),
                 "Already rejected by this approver"
@@ -86,6 +94,10 @@ pub fn apply(effect: ExpenseEffect, pre: &[u8]) -> Option<Vec<u8>> {
             assert!(
                 !expense.approvers.contains(&approver),
                 "Approver already approved this expense"
+            );
+            assert!(
+                expense.rejectors.len() < MAX_APPROVERS,
+                "Rejection limit reached"
             );
             expense.rejectors.push(approver);
             expense.status = ExpenseStatus::Rejected;

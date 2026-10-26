@@ -2785,6 +2785,7 @@ dependencies = [
 name = "sacco_ledger_idl"
 version = "0.1.0"
 dependencies = [
+ "borsh",
  "sacco_ledger_core",
  "serde_json",
 ]
@@ -2796,6 +2797,7 @@ dependencies = [
  "borsh",
  "lee_core",
  "sacco_ledger_core",
+ "sacco_ledger_idl",
 ]
 
 [[package]]

@@ -4,7 +4,7 @@ mod support;
 
 use nssa_core::account::AccountId;
 use sacco_ledger_core::Instruction;
-use support::{aid, meta, unsigned, Ledger};
+use support::{aid, meta, unsigned, verified_sacco, Ledger};
 
 fn registered(ledger: &mut Ledger) -> (AccountId, AccountId) {
     let (sacco, admin) = (aid(1), aid(2));
@@ -108,6 +108,124 @@ fn add_approver_admin_only() {
         Instruction::AddApprover { approver: aid(3) },
     );
     assert!(ledger.sacco(sacco).approvers.contains(&aid(3)));
+}
+
+#[test]
+fn admin_can_set_threshold_within_approver_count() {
+    let mut ledger = Ledger::new();
+    let (sacco, admin) = registered(&mut ledger);
+    ledger.execute(
+        &[meta(sacco), meta(admin)],
+        Instruction::AddApprover { approver: aid(3) },
+    );
+    ledger.execute(
+        &[meta(sacco), meta(admin)],
+        Instruction::AddApprover { approver: aid(4) },
+    );
+    ledger.execute(
+        &[meta(sacco), meta(admin)],
+        Instruction::SetRequiredApprovals {
+            required_approvals: 2,
+        },
+    );
+    assert_eq!(ledger.sacco(sacco).required_approvals, 2);
+}
+
+#[test]
+#[should_panic(expected = "Only the SACCO admin can set approvals")]
+fn only_admin_can_change_approval_threshold() {
+    let mut ledger = Ledger::new();
+    let (sacco, admin) = registered(&mut ledger);
+    ledger.execute(
+        &[meta(sacco), meta(admin)],
+        Instruction::AddApprover { approver: aid(3) },
+    );
+    ledger.execute(
+        &[meta(sacco), meta(admin)],
+        Instruction::AddApprover { approver: aid(4) },
+    );
+    ledger.execute(
+        &[meta(sacco), meta(aid(3))],
+        Instruction::SetRequiredApprovals {
+            required_approvals: 2,
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Threshold must be between 2 and one less than the approver count")]
+fn threshold_cannot_exceed_approver_count() {
+    let mut ledger = Ledger::new();
+    let (sacco, admin) = registered(&mut ledger);
+    ledger.execute(
+        &[meta(sacco), meta(admin)],
+        Instruction::SetRequiredApprovals {
+            required_approvals: 2,
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Threshold must be between 2 and one less than the approver count")]
+fn configured_threshold_must_have_multiple_approvers() {
+    let mut ledger = Ledger::new();
+    let (sacco, admin) = registered(&mut ledger);
+    for approver in [aid(3), aid(4)] {
+        ledger.execute(
+            &[meta(sacco), meta(admin)],
+            Instruction::AddApprover { approver },
+        );
+    }
+    ledger.execute(
+        &[meta(sacco), meta(admin)],
+        Instruction::SetRequiredApprovals {
+            required_approvals: 1,
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Approver limit reached")]
+fn approver_list_has_a_fixed_limit() {
+    let mut ledger = Ledger::new();
+    let (sacco_id, admin) = registered(&mut ledger);
+    let mut sacco = ledger.sacco(sacco_id);
+    sacco.approvers = vec![aid(2); sacco_ledger_core::MAX_APPROVERS];
+    ledger.put(sacco_id, &sacco);
+    ledger.execute(
+        &[meta(sacco_id), meta(admin)],
+        Instruction::AddApprover { approver: aid(3) },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Member limit reached")]
+fn member_list_has_a_fixed_limit() {
+    let mut ledger = Ledger::new();
+    let (sacco_id, admin) = registered(&mut ledger);
+    let mut sacco = ledger.sacco(sacco_id);
+    sacco.member_ids = vec![aid(10); sacco_ledger_core::MAX_SACCO_MEMBERS];
+    ledger.put(sacco_id, &sacco);
+    ledger.execute(
+        &[meta(sacco_id), meta(aid(16)), meta(admin)],
+        Instruction::AddMember { identity: aid(16) },
+    );
+}
+
+#[test]
+#[should_panic(expected = "Instruction cannot apply multiple effects to the same account")]
+fn one_account_cannot_fill_two_effected_roles() {
+    let mut ledger = Ledger::new();
+    verified_sacco(&mut ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(1)), meta(aid(7)), meta(aid(2))],
+        Instruction::RecordDeposit {
+            member: aid(1),
+            amount: 1_000,
+            deposit_type: sacco_ledger_core::DepositType::Savings,
+            reference: "MPZA-alias".into(),
+        },
+    );
 }
 
 #[test]

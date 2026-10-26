@@ -55,6 +55,9 @@ fn samples() -> Vec<Instruction> {
             label: "l".into(),
             totals: Totals::default(),
         },
+        Instruction::SetRequiredApprovals {
+            required_approvals: 2,
+        },
     ]
 }
 
@@ -93,13 +96,21 @@ fn the_table_covers_every_instruction() {
 
 #[test]
 fn arg_names_match_the_instruction_enum_fields() {
-    for instruction in samples() {
+    for (index, instruction) in samples().into_iter().enumerate() {
         let name = variant_name(&instruction);
+        let encoded = borsh::to_vec(&instruction).expect("instruction encodes");
+        assert_eq!(
+            usize::from(encoded[0]),
+            index,
+            "{name}: Borsh variant index"
+        );
+        assert_eq!(INSTRUCTIONS[index].name, name, "IDL variant order");
         let spec = INSTRUCTIONS
             .iter()
             .find(|spec| spec.name == name)
             .unwrap_or_else(|| panic!("{name} missing from IDL table"));
         let mut idl_args: Vec<&str> = spec.args.iter().map(|arg| arg.name).collect();
+        let idl_args_in_order = idl_args.clone();
         let mut enum_fields = serde_field_names(&instruction);
         idl_args.sort_unstable();
         enum_fields.sort_unstable();
@@ -107,6 +118,19 @@ fn arg_names_match_the_instruction_enum_fields() {
             idl_args, enum_fields,
             "{name}: IDL args must match Instruction serde field names"
         );
+        let serialized = serde_json::to_string(&instruction).expect("instruction serializes");
+        let mut previous = 0;
+        for arg in &idl_args_in_order {
+            let marker = format!("\"{arg}\":");
+            let position = serialized
+                .find(&marker)
+                .unwrap_or_else(|| panic!("{name}: serialized field {arg} missing"));
+            assert!(
+                position >= previous,
+                "{name}: IDL arg order differs from enum"
+            );
+            previous = position;
+        }
     }
 }
 

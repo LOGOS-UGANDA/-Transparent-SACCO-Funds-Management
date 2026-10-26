@@ -208,7 +208,13 @@
         },
         {
           "init": false,
-          "name": "member",
+          "name": "member_account",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "init": false,
+          "name": "member_signer",
           "signer": true,
           "writable": false
         }
@@ -517,7 +523,7 @@
           "init": false,
           "name": "sacco",
           "signer": false,
-          "writable": false
+          "writable": true
         },
         {
           "init": true,
@@ -543,6 +549,29 @@
         }
       ],
       "name": "post_period_summary"
+    },
+    {
+      "accounts": [
+        {
+          "init": false,
+          "name": "sacco",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "init": false,
+          "name": "admin",
+          "signer": true,
+          "writable": false
+        }
+      ],
+      "args": [
+        {
+          "name": "required_approvals",
+          "type": "u8"
+        }
+      ],
+      "name": "set_required_approvals"
     }
   ],
   "name": "sacco_ledger",

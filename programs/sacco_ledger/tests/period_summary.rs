@@ -78,15 +78,93 @@ fn post_period_summary_rejects_a_stale_snapshot() {
 }
 
 #[test]
-#[should_panic(expected = "Period label must not be empty")]
-fn post_period_summary_rejects_empty_label() {
+#[should_panic(expected = "Period label must use YYYY-MM format")]
+fn post_period_summary_rejects_invalid_label() {
     let mut ledger = Ledger::new();
     funded(&mut ledger);
     let snapshot = totals(&ledger);
     ledger.execute(
         &[meta(aid(1)), meta(aid(10)), meta(aid(2))],
         Instruction::PostPeriodSummary {
-            label: String::new(),
+            label: "2026-13".into(),
+            totals: snapshot,
+        },
+    );
+}
+
+#[test]
+fn period_labels_can_be_posted_out_of_order() {
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let snapshot = totals(&ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(10)), meta(aid(2))],
+        Instruction::PostPeriodSummary {
+            label: "2026-11".into(),
+            totals: snapshot,
+        },
+    );
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(11)), meta(aid(2))],
+        Instruction::PostPeriodSummary {
+            label: "2026-10".into(),
+            totals: snapshot,
+        },
+    );
+    assert_eq!(ledger.summary(aid(11)).label, "2026-10");
+}
+
+#[test]
+#[should_panic(expected = "Period label was already posted")]
+fn an_older_period_cannot_be_reposted_after_a_newer_one() {
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let snapshot = totals(&ledger);
+    for (summary, label) in [
+        (aid(10), "2026-11"),
+        (aid(11), "2026-12"),
+        (aid(12), "2026-11"),
+    ] {
+        ledger.execute(
+            &[meta(aid(1)), meta(summary), meta(aid(2))],
+            Instruction::PostPeriodSummary {
+                label: label.into(),
+                totals: snapshot,
+            },
+        );
+    }
+}
+
+#[test]
+#[should_panic(expected = "Period label was already posted")]
+fn a_period_label_cannot_be_posted_twice() {
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let snapshot = totals(&ledger);
+    for summary in [aid(10), aid(11)] {
+        ledger.execute(
+            &[meta(aid(1)), meta(summary), meta(aid(2))],
+            Instruction::PostPeriodSummary {
+                label: "2026-11".into(),
+                totals: snapshot,
+            },
+        );
+    }
+}
+
+#[test]
+#[should_panic(expected = "Period summary limit reached")]
+fn summary_history_has_a_fixed_limit() {
+    let mut ledger = Ledger::new();
+    funded(&mut ledger);
+    let mut sacco = ledger.sacco(aid(1));
+    sacco.period_labels = vec!["2000-01".into(); sacco_ledger_core::MAX_PERIOD_SUMMARIES];
+    ledger.put(aid(1), &sacco);
+    let snapshot = totals(&ledger);
+    ledger.execute(
+        &[meta(aid(1)), meta(aid(200)), meta(aid(2))],
+        Instruction::PostPeriodSummary {
+            label: "2026-11".into(),
             totals: snapshot,
         },
     );

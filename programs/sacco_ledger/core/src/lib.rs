@@ -17,6 +17,32 @@ pub type ProgramConfigVersion = u8;
 
 pub use nssa_core::account::AccountId;
 
+/// Bounded role/member collections keep individual account shards within a
+/// predictable size. Larger deployments need registry shards before raising these.
+pub const MAX_SACCO_MEMBERS: usize = 128;
+pub const MAX_APPROVERS: usize = 32;
+pub const MAX_SUPERVISORS: usize = 32;
+pub const MAX_MEMBER_LOANS: usize = 128;
+pub const MAX_PERIOD_SUMMARIES: usize = 128;
+
+/// True for canonical, sortable calendar-month labels such as `2026-11`.
+pub(crate) fn is_valid_period_label(label: &str) -> bool {
+    let bytes = label.as_bytes();
+    if bytes.len() != 7
+        || bytes[4] != b'-'
+        || !bytes[..4].iter().all(u8::is_ascii_digit)
+        || !bytes[5..].iter().all(u8::is_ascii_digit)
+    {
+        return false;
+    }
+
+    let year = bytes[..4]
+        .iter()
+        .fold(0_u16, |year, digit| year * 10 + u16::from(*digit - b'0'));
+    let month = u16::from(bytes[5] - b'0') * 10 + u16::from(bytes[6] - b'0');
+    year > 0 && (1..=12).contains(&month)
+}
+
 /// Deposit record type: withdrawable savings vs member ownership (share capital).
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
@@ -72,6 +98,8 @@ pub struct Sacco {
     pub total_loans_repaid: u128,
     /// Total expenses executed (recorded release of off-chain funds).
     pub total_expenses: u128,
+    /// Posted periods, retained to reject duplicate summary labels.
+    pub period_labels: Vec<String>,
     /// Multi-sig threshold for loans and expenses, configured per SACCO.
     pub required_approvals: u8,
     /// Approvers (treasurer and committee members) allowed to record and approve.
@@ -102,6 +130,7 @@ impl Sacco {
             total_loans_disbursed: 0,
             total_loans_repaid: 0,
             total_expenses: 0,
+            period_labels: vec![],
             required_approvals: 1,
             approvers: vec![admin],
             supervisory_committee: vec![],
@@ -314,7 +343,8 @@ pub enum Instruction {
     /// Accounts:
     /// - Sacco account
     /// - Deposit account (mut)
-    /// - Member account (signer)
+    /// - Member account (read-only)
+    /// - Member identity account (signer)
     ConfirmDeposit,
 
     /// Member applies for a loan.
@@ -426,6 +456,13 @@ pub enum Instruction {
         /// The totals snapshot, re-asserted so the SACCO shard can validate it.
         totals: Totals,
     },
+
+    /// Change the approval threshold for new loans and expenses.
+    ///
+    /// Accounts:
+    /// - Sacco account (mut)
+    /// - Admin account (signer)
+    SetRequiredApprovals { required_approvals: u8 },
 }
 
 /// Seed for the singleton config PDA.

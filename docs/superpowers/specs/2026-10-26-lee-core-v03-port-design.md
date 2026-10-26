@@ -103,7 +103,7 @@ Every variant carries only what its own transition needs. The full set, by shard
 | `RecordRepayment { approver, amount }` | assert verified + approver; add to `total_loans_repaid` |
 | `ProposeExpense { proposer, amount, required_approvals }` | assert verified + approver + amount > 0 + threshold matches the live config |
 | `ExecuteExpense { approver, amount }` | assert verified + approver; add to `total_expenses` |
-| `HoldTotals(Totals)` | inspect-only (`None`): assert the five live totals equal the snapshot |
+| `HoldTotals { totals, poster }` | inspect-only (`None`): assert the poster is an approver and the five live totals equal the snapshot |
 
 **MemberEffect**: `Init { sacco, identity }`, `RecordDeposit { sacco, amount, deposit_type }`,
 `AttachLoan { sacco, loan, signer }` (asserts `signer == member.identity`) — each also asserts

@@ -14,8 +14,9 @@ The SACCO ledger records attestations; it does not hold or transfer member funds
 - PR #20 is based on `main`, which has no `programs/sacco_ledger` tree or `artifacts/sacco_ledger-idl.json`.
 - PR #17 contains the first API-contract document for issue #5. It references the ledger IDL and deployment documentation that are not present on its base branch.
 - PR #18 adds the `sacco_ledger` program on `lee_core` v0.2.5-rc2. PR #21 ports that program to v0.3 and is based on PR #18. PR #21 remains open with a changes-requested review.
+- PR #21 currently marks the `Initialize` config account as a signer even though it derives that account as a PDA. A PDA has no wallet signing key; initialization must validate the exact derived PDA without requiring its signature.
 - The baseline on `main` fails before tests start: `programs/fee_transparency/methods/Cargo.toml` has no target. PR #18 replaces that scaffold with the ledger guest library and guest binary.
-- The local sequencer is already healthy on port 3040. Basecamp has not been set up. No local Bedrock/indexer service is listening on ports 8080/8779.
+- The local sequencer is already healthy on port 3040. Basecamp has not been set up. No local Bedrock endpoint is listening on port 8080. The in-process `lez_indexer_module` exposes queries through Logos calls; its standalone port 8779 is not required.
 - The current program and API contract depend on a deployed program ID recorded in `docs/deploy.md`, which does not yet exist on `main`.
 
 **Dependency order:** PR #18 must land before PR #21; both ledger changes must land before the issue #5 integration is built and verified against `main`. This work will not merge either dependency PR. Update the existing issue #5 branch after those dependencies are merged, rather than copying the program/IDL into a second branch.
@@ -27,6 +28,7 @@ The SACCO ledger records attestations; it does not hold or transfer member funds
 3. Keep instruction encoding, account ordering, signer flags, and account decoding tied to the Rust ledger types and generated IDL.
 4. Fix the member view’s missing account selection, the mismatch between query response shapes and QML models, and invalid JSON construction from unvalidated inputs.
 5. Demonstrate the deposit/member-confirmation/multi-signature-expense flow in Basecamp on a local test network.
+6. Make program initialization possible by requiring the exact config PDA while treating it as a non-signer.
 
 ## Non-goals
 
@@ -61,6 +63,7 @@ Build and link this client crate as a native static library in the `sacco_core` 
 - Populate signer choices from the connected LEZ wallet’s account list. The UI passes a selected account ID; it never receives or stores private keys.
 - `sacco_core` builds account metas and signer requirements from the IDL, not from UI-provided boolean flags.
 - Use the `sacco_ledger` client helpers for config-PDA calculation and account-ID conversion. Generate new public account IDs through `lez_core` for the SACCO, member, deposit, loan, expense, and summary records that need initialized accounts.
+- `Initialize` must reject a config account whose ID is not `compute_config_pda(program_id)` and must not require a signature from the PDA.
 - Persist only non-secret demo conveniences (program ID, active SACCO ID, created record IDs) under the module instance persistence path. The indexer remains the source of truth for chain state and audit history.
 - Return a consistent JSON envelope from module methods: success/error status, transaction hash when applicable, decoded data, and a user-readable error. Do not report a queued transaction as successful before the wallet and sequencer accept it.
 
@@ -102,7 +105,7 @@ Build and link this client crate as a native static library in the `sacco_core` 
 ## Operational Constraints
 
 - Basecamp profile setup is not present. Use project-local `.scaffold/basecamp/` state only.
-- The indexer module needs a reachable Bedrock endpoint and local indexer configuration. The current sequencer-only setup does not provide listeners on ports 8080/8779; bring up the matching local services before claiming the audit view works.
+- The indexer module needs a reachable Bedrock endpoint at port 8080 and local indexer configuration. The standalone JSON-RPC listener on port 8779 is not required when queries use the in-process module.
 - Do not reuse or expose wallet keys. Use fresh local test accounts and the local wallet home for the demo.
 - If a required upstream dependency or service cannot be built or started, report the exact failing command and leave the acceptance criterion visibly incomplete rather than replacing it with a mock response.
 

@@ -2,6 +2,10 @@
 
 use nssa_core::account::AccountId;
 use nssa_core::program::{AccountMeta, PlanInput};
+use sacco_ledger_core::effect::{
+    ConfigEffect, DepositEffect, Effect, ExpenseEffect, LoanEffect, MemberEffect, SaccoEffect,
+    SummaryEffect,
+};
 use sacco_ledger_core::{compute_config_pda, DepositType, Instruction, Totals};
 use sacco_ledger_idl::INSTRUCTIONS;
 use sacco_ledger_program::plan;
@@ -72,7 +76,7 @@ fn samples() -> Vec<Instruction> {
 }
 
 #[test]
-fn idl_signer_flags_match_plan_authorization() {
+fn idl_account_flags_match_planned_effects_and_signer_authorization() {
     let samples = samples();
     assert_eq!(samples.len(), INSTRUCTIONS.len());
 
@@ -100,9 +104,32 @@ fn idl_signer_flags_match_plan_authorization() {
             accounts: accounts.clone(),
             instruction_data: borsh::to_vec(instruction).expect("instruction encodes"),
         };
-        let _planned = plan(&input, instruction.clone());
+        let planned = plan(&input, instruction.clone());
 
         for (slot, account) in spec.accounts.iter().enumerate() {
+            let account_id = accounts[slot].account_id;
+            let effect = planned
+                .output()
+                .effects
+                .iter()
+                .find(|effect| effect.selector.account_id == account_id)
+                .map(|effect| {
+                    borsh::from_slice::<Effect>(&effect.data).expect("planned effect decodes")
+                });
+            assert_eq!(
+                account.writable,
+                effect.as_ref().is_some_and(effect_writes_shard),
+                "{} account {} writable flag must match its planned effect",
+                spec.name,
+                account.name
+            );
+            assert_eq!(
+                account.init,
+                effect.as_ref().is_some_and(effect_initializes_shard),
+                "{} account {} init flag must match its planned effect",
+                spec.name,
+                account.name
+            );
             if !account.signer {
                 continue;
             }
@@ -119,5 +146,54 @@ fn idl_signer_flags_match_plan_authorization() {
                 account.name
             );
         }
+    }
+}
+
+fn effect_writes_shard(effect: &Effect) -> bool {
+    match effect {
+        Effect::Config(ConfigEffect::Init { .. }) => true,
+        Effect::Sacco(effect) => !matches!(
+            effect,
+            SaccoEffect::AuthorizeProposal { .. }
+                | SaccoEffect::AuthorizeApprover { .. }
+                | SaccoEffect::ProposeExpense { .. }
+        ),
+        Effect::Member(effect) => !matches!(effect, MemberEffect::AuthorizeIdentity { .. }),
+        Effect::Deposit(_) | Effect::Loan(_) | Effect::Expense(_) | Effect::Summary(_) => true,
+    }
+}
+
+fn effect_initializes_shard(effect: &Effect) -> bool {
+    match effect {
+        Effect::Config(ConfigEffect::Init { .. })
+        | Effect::Sacco(SaccoEffect::Register { .. })
+        | Effect::Member(MemberEffect::Init { .. })
+        | Effect::Deposit(DepositEffect::Init(_))
+        | Effect::Loan(LoanEffect::Init { .. })
+        | Effect::Expense(ExpenseEffect::Init { .. })
+        | Effect::Summary(SummaryEffect::Init { .. }) => true,
+        Effect::Sacco(
+            SaccoEffect::Verify { .. }
+            | SaccoEffect::AddApprover { .. }
+            | SaccoEffect::AddSupervisor { .. }
+            | SaccoEffect::AddMember { .. }
+            | SaccoEffect::RecordDeposit { .. }
+            | SaccoEffect::AuthorizeProposal { .. }
+            | SaccoEffect::AuthorizeApprover { .. }
+            | SaccoEffect::DisburseLoan { .. }
+            | SaccoEffect::RecordRepayment { .. }
+            | SaccoEffect::ProposeExpense { .. }
+            | SaccoEffect::ExecuteExpense { .. }
+            | SaccoEffect::HoldTotals { .. }
+            | SaccoEffect::SetRequiredApprovals { .. },
+        )
+        | Effect::Member(
+            MemberEffect::RecordDeposit { .. }
+            | MemberEffect::AttachLoan { .. }
+            | MemberEffect::AuthorizeIdentity { .. },
+        )
+        | Effect::Deposit(DepositEffect::Confirm { .. })
+        | Effect::Loan(_)
+        | Effect::Expense(_) => false,
     }
 }

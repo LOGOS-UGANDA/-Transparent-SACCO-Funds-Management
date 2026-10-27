@@ -1,0 +1,15 @@
+[package]
+name = "sacco_ledger_program"
+version = "0.1.0"
+edition = "2021"
+
+[lints]
+workspace = true
+
+[dependencies]
+nssa_core = { workspace = true }
+sacco_ledger_core = { workspace = true }
+
+[dev-dependencies]
+borsh = { workspace = true }
+sacco_ledger_idl = { path = "idl" }

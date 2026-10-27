@@ -21,7 +21,7 @@ Basecamp is the right place to **eventually** exercise the product UI + modules.
 1. Install from [logos.co/basecamp](https://logos.co/basecamp).
 2. Open Basecamp and confirm bundled modules load (Package Manager / Modules).
 3. Exercise the **LEZ wallet**: create accounts, get test tokens (Piñata/faucet if available), transfer, optionally create a custom token.
-4. Open the **LEZ explorer / blockchain dashboard** if present — this is the environment `sacco_ledger` will target.
+4. Open the **LEZ explorer / blockchain dashboard** if present — this is the environment `fee_transparency` will target.
 5. Optionally try a third-party module from a community repo:  
    **Settings → Package Repositories → Add** a URL from the [forum thread](https://forum.logos.co/t/basecamp-module-repository-links/1843), then install from Applications.
 
@@ -47,15 +47,15 @@ Requires Rust + Logos LEZ dependencies (see [lez-programs](https://github.com/lo
 
 ```bash
 cd programs
-RISC0_DEV_MODE=1 cargo test -p sacco_ledger_program
+RISC0_DEV_MODE=1 cargo test -p fee_transparency_program
 ```
 
 Later (on-chain):
 
 ```bash
 # after guest build
-wallet deploy-program target/guest/sacco_ledger.bin
-spel --idl ../artifacts/sacco_ledger-idl.json initialize ...
+wallet deploy-program target/guest/fee_transparency.bin
+spel --idl ../artifacts/fee_transparency-idl.json initialize ...
 # then register_institution → initialize_institution_vault → pay_fees → ...
 ```
 
@@ -148,9 +148,9 @@ Or in Basecamp UI: **Package Manager → Install LGX Package** and select the `.
 
 ### 5. Pass criteria (after LEZ wiring — future)
 
-- `RecordDeposit` updates member and SACCO totals (savings vs share capital split)  
-- Multi-sig approve → `ExecuteExpense` records the off-chain payment proof  
-- Deposits, loans and expenses verifiable via public accounts / explorer  
+- `Initialize` + vault + `PayFees` show vault balance change in LEZ explorer  
+- Multi-sig approve → `ExecuteRelease` moves tokens to treasury  
+- Payment verifiable via public accounts / explorer  
 
 ---
 

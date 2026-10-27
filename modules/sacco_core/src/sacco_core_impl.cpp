@@ -16,7 +16,7 @@ std::string queued(const std::string& op, const std::string& detail)
 
 std::string SaccoCoreImpl::getStatus()
 {
-    return "sacco_core scaffold ready — LEZ fee_transparency wiring pending";
+    return "sacco_core scaffold ready — sacco_ledger attestation wiring pending";
 }
 
 std::string SaccoCoreImpl::registerInstitution(

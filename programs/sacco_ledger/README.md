@@ -83,22 +83,29 @@ cargo +risc0 build --release --target riscv32im-risc0-zkvm-elf
 
 ## Local deploy
 
-Built and deployed against a `logos-scaffold` 0.4.0 local sequencer on
-`lee_core` v0.3.1:
+The following are the local deployment commands for `logos-scaffold` 0.4.0.
+They have not been rerun against a sequencer built from the current pins. The
+valid RISC Zero `ProgramBinary` is produced by building the methods crate:
 
 ```bash
+cargo build --release --manifest-path programs/sacco_ledger/methods/Cargo.toml
 logos-scaffold localnet start
 logos-scaffold deploy --program-path \
-  programs/sacco_ledger/methods/guest/target/riscv32im-risc0-zkvm-elf/release/sacco_ledger --json
+  programs/target/riscv-guest/sacco_ledger-methods/sacco_ledger-guest/riscv32im-risc0-zkvm-elf/release/sacco_ledger.bin --json
 ```
 
-The deploy prints the risc0 image id for the guest ELF; record it here when it
-changes. Testnet deployment stays with issue #4 and
-[`docs/deploy.md`](../../docs/deploy.md).
+Previously recorded local sequencer program ID:
+`e45a5879831de87447a44046150d37d2036db0c44fc3cc519c6da7536a1422a7`. It was
+extracted with `logos-scaffold spel -- program-id <ProgramBinary>` and included
+in a local deployment block. Verify it again after rebuilding the local
+sequencer and guest. Public testnet deployment remains deferred in issue #4;
+it is not needed for local development.
 
 ## Known gaps
 
-1. `logos-scaffold` 0.4.0 exposes no transaction subcommand, so the `initialize`
-   call is deferred to the wallet/Basecamp path in `docs/deploy.md`.
+1. The ignored `.scaffold` cache was built with the previous LEZ and circuits
+   pins. Run `logos-scaffold setup` to rebuild from the v0.3.1 / circuits 0.5.7
+   pins above, then rerun the local `initialize` call before treating it as
+   verified.
 2. `sacco_core` does not submit IDL transactions yet.
-3. No refund path.
+3. Refunds are handled off chain; the current ledger has no instruction to record a refund yet.

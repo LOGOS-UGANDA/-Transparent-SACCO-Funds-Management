@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "ui_qml",
   "category": "finance",
-  "description": "QML UI for Transparent SACCO — pay fees, verify payments, and track multi-sig releases on Logos.",
+  "description": "Scaffold QML UI for the Transparent SACCO attestation ledger. SACCO payments stay off chain; this module does not hold or transfer funds.",
   "view": "Main.qml",
   "icon": null,
   "dependencies": ["sacco_core"],

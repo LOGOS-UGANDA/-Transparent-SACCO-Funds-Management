@@ -1,46 +1,69 @@
-# Deploying `sacco_ledger`
+# Phase 2 deployment runbook
 
-> Phase 2 runbook (issue #4). The program compiles and tests green (see CI); the deploy steps need the Logos toolchain on a machine with the sequencer/testnet credentials.
+Phase 2 starts with local development. The SACCO program records off-chain
+deposits, loan activity, and expenses; it does not receive, hold, or transfer
+SACCO money. This runbook does not require a public testnet wallet, token
+top-up, or fee payment.
 
-## Prerequisites
+## Current status
 
-- Basecamp installed ([logos.co/basecamp](https://logos.co/basecamp)) — gives you the wallet, the local LEZ node and `logosctl`
-- `logos-scaffold` for the local sequencer ([docs: write and deploy an LEZ program](https://docs.logos.co/lez/programs/write-and-deploy-lez-program-with-scaffold))
-- Nix with flakes (for building the `.lgx` packages)
+- `logos-scaffold` 0.4.0 manages the project-local LEZ sequencer and guest
+  deployment.
+- The project is pinned to LEZ `1a003bfbfb89fcf987f62975cd08a401169e1b8c` and
+  circuits `0.5.7` in `scaffold.toml`.
+- There is no checked-in host runner for submitting `sacco_ledger` IDL
+  instructions. `logosctl call` invokes Logos Core modules; it does not call an
+  LEZ guest program. Do not use the old `logosctl call sacco_ledger ...`
+  examples as deploy commands.
+- The prior local deployment recorded in
+  [`programs/sacco_ledger/README.md`](../programs/sacco_ledger/README.md) has
+  not been re-verified against a freshly built v0.3.1 local sequencer.
 
-## 1. Local sequencer
+## 1. Build the local tooling and guest
 
-```bash
-# start a local sequencer
-logos-scaffold up
-# deploy the program from this repo
-logos-scaffold deploy programs/sacco_ledger
-# note the program id it prints — record it below
-```
-
-Record the deployed program id here once done: `__________`
-
-Then run a working call against the local node:
-
-```bash
-logosctl call sacco_ledger initialize        # config PDA
-logosctl call sacco_ledger register_sacco "Kampala Traders SACCO" UG-SACCO-001 <treasury-id>
-logosctl call sacco_ledger verify_sacco      # admin signs
-```
-
-**Done when:** the initialize/register/verify round-trip returns success on the local sequencer.
-
-## 2. Testnet
+Run from the repository root. `setup` syncs the configured LEZ and circuits
+versions and builds the local sequencer, wallet, and `spel` binaries. If no
+prebuilt sequencer exists for the pin, it falls back to a source build.
 
 ```bash
-logos-scaffold deploy --network testnet programs/sacco_ledger
+logos-scaffold setup --prebuilt
+logos-scaffold build
 ```
 
-- Record the testnet program id here: `__________`
-- Commit the program id to this file (and `README.md`) in the same PR as the deploy.
+The source build may take a long time on a cold cache. It is local compilation;
+it does not submit a public transaction or charge a deployment fee.
 
-**Done when:** one working call (initialize) succeeds on testnet and the program id is recorded.
+## 2. Deploy to the local sequencer
 
-## 3. Notes on the v0.3 port
+```bash
+logos-scaffold localnet start
+logos-scaffold localnet status --json
+logos-scaffold deploy --program-path \
+  programs/target/riscv-guest/sacco_ledger-methods/sacco_ledger-guest/riscv32im-risc0-zkvm-elf/release/sacco_ledger.bin \
+  --json
+```
 
-This repo runs on `lee_core` v0.2.5-rc2 — the version `token_core` and `spel` 0.7 pair with today. Testnet v0.3 replaces the account model (sharded `AccountData`, diff-only outputs), which is a handler-port, not a tag bump. Budget a focused session for it after the local-sequencer deploy; the unit-test suite (52 tests) is the safety net during that port.
+The deploy output includes the RISC Zero program ID. Compare it with the ID
+recorded in the program README and update that value only after confirming a
+successful deployment of the current guest binary.
+
+## 3. Submit a ledger instruction
+
+This step is not available yet. The repository has an IDL, but no host-side
+runner that builds, signs, and submits a `PublicTransaction` to the local
+sequencer. Add and verify that runner before claiming the Phase 2 working-call
+milestone complete. The call should record a SACCO event and its approval; it
+must not transfer or custody SACCO funds.
+
+## 4. Public testnet
+
+Deferred. Public testnet deployment and calls are not part of the current local
+workflow or this preparation PR. Issue #4 remains open until its remaining
+deployment and working-call criteria are completed. Do not top up a wallet or
+submit testnet transactions as part of this runbook.
+
+## Related documentation
+
+- [Program instructions, local deployment, and known gaps](../programs/sacco_ledger/README.md)
+- [Attestation architecture](./architecture.md)
+- [Testing guide](./testing.md)

@@ -16,7 +16,7 @@ The start-to-finish map for Logos Circle Kampala's winnable issue: what we build
 
 > **What winning means:** A real SACCO using the tool, members checking it, and measured results reported publicly. Strong code alone does not win a Circles issue.
 
-> **Settled in review:** oversight is split from approval — a **Supervisory Committee** role sits beside the Committee. And the program is a **record, not a custodian**: value stays in mobile money and bank accounts, and the chain attests to what happened. The existing vault-custody code stays dormant.
+> **Settled in review:** oversight is split from approval — a **Supervisory Committee** role sits beside the Committee. And the program is a **record, not a custodian**: value stays in mobile money, bank accounts, or cash, and the chain attests to what happened. The former vault-custody design is superseded and is not part of the current product.
 
 ## Architecture
 
@@ -56,10 +56,10 @@ Ticks show work already done.
 |---|---|---|---|
 | 2–4 | Logos Blockchain integration | LEZ (Rust, RISC Zero) | `sacco_ledger` passes tests for every instruction. |
 
-- [x] Vault, multi-sig release flow and approver checks exist (`sacco_ledger`)
+- [x] SACCO attestation ledger, governance, and multi-sig approval checks exist; SACCO funds stay off chain (`sacco_ledger`)
 - [x] Program IDL exported (`artifacts/`)
 - [ ] Bump `lee_core` to v0.3, fix breakages and deploy a hello-world program
-- [ ] Rename `sacco_ledger` to `sacco_ledger` and drop university fee concepts
+- [x] Rename the former fee-transparency program to `sacco_ledger` and remove university-fee concepts from the LEZ program
 - [ ] Add SACCO, Member, Committee and Supervisory Committee accounts (approvers separate from supervisors)
 - [ ] Make approver thresholds and role composition configurable per SACCO
 - [ ] Add `RecordDeposit` with treasurer record and member confirmation
@@ -72,11 +72,11 @@ Ticks show work already done.
 
 | Steps | Lead workstream | Logos pieces | Done when |
 |---|---|---|---|
-| 4 | Logos Blockchain integration | Testnet v0.3, `logos-scaffold` | Program deployed on local sequencer and testnet with a working call. |
+| 4 | Logos Blockchain integration | Local LEZ sequencer, `logos-scaffold` | Program deployed locally and a ledger instruction call works. |
 
-- [ ] Switch docs and scripts from `logoscore`/`lgpm` to `logosctl`
+- [x] Switch docs and scripts from `logoscore`/`lgpm` to `logosctl`
 - [ ] Deploy to local sequencer with `logos-scaffold`
-- [ ] Deploy to testnet and record the program ID in the repo
+- [ ] Defer public testnet deployment until the local product flow works and the team chooses to proceed; it is not required for development
 
 ### Phase 3: Core and UI wiring — Steps 5–7
 
@@ -140,7 +140,7 @@ Ticks show work already done.
 |---|---|---|---|
 | 0 · Scope and validate | Steps 1 | Community and pilot | One pilot SACCO has signed off on three flows and the metrics. |
 | 1 · Domain model and LEZ program | Steps 2–4 | Logos Blockchain integration | `sacco_ledger` passes tests for every instruction. |
-| 2 · Upgrade and deploy | Steps 4 | Logos Blockchain integration | Program deployed on local sequencer and testnet with a working call. |
+| 2 · Upgrade and deploy | Steps 4 | Logos Blockchain integration | Program deployed locally and a ledger instruction call works; public testnet deployment is a later optional step. |
 | 3 · Core and UI wiring | Steps 5–7 | Backend and Frontend | One full flow works end to end inside Basecamp. |
 | 4 · Privacy | Steps 7–8 | Logos Blockchain integration | Individual balances are private; SACCO totals stay public. |
 | 5 · Storage and Messaging | Steps 8–9 | Backend | Receipts stored by CID and members get alerts. |
@@ -169,8 +169,8 @@ The earlier report names five workstreams; the fifth is shown here as Community 
 | Member | Account | Private | Savings, shares, loan balance |
 | RecordDeposit | Instruction | Member private, total public | Treasurer records, member confirms |
 | ApplyLoan / ApproveLoan | Instruction | Private with public totals | Committee multi-sig |
-| DisburseLoan / RecordRepayment | Instruction | Private with public totals | Evidence CID attached |
-| ProposeExpense / ExecuteExpense | Instruction | Public | Records approval and release of funds held off chain |
+| DisburseLoan / RecordRepayment | Instruction | Private with public totals | Records off-chain disbursement or repayment, with evidence CID |
+| ProposeExpense / ExecuteExpense | Instruction | Public | Records approval and evidence of an off-chain payment |
 | PostPeriodSummary | Instruction | Public | Period totals for all members |
 
 ## Metrics

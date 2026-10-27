@@ -16,7 +16,8 @@ Basecamp finds third-party apps through **module repositories** (catalogues), no
 
 ## Local install (during development)
 
-- Install a local `.lgx` in Basecamp via Package Manager → Install LGX Package, or with `logosctl package install` into a modules directory.
+- Install a local `.lgx` in Basecamp via Package Manager → Install LGX Package, or from the command line with `logosctl package install --file <path-to-package.lgx> --yes`.
+- Use `logosctl module load <module-name>` to load the module after installation.
 - Preview UI modules with `logos-standalone-app` (`nix run` in the UI module flake).
 
 ## References

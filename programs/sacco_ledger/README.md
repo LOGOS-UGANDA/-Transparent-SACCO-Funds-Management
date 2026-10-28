@@ -83,9 +83,9 @@ cargo +risc0 build --release --target riscv32im-risc0-zkvm-elf
 
 ## Local deploy
 
-The following are the local deployment commands for `logos-scaffold` 0.4.0.
-They have not been rerun against a sequencer built from the current pins. The
-valid RISC Zero `ProgramBinary` is produced by building the methods crate:
+The valid RISC Zero `ProgramBinary` is produced by building the methods crate.
+For the pinned LEZ/SPEL/circuits pairing and the scaffold 0.4.x local block-size
+workaround, follow [`docs/deploy.md`](../../docs/deploy.md).
 
 ```bash
 cargo build --release --manifest-path programs/sacco_ledger/methods/Cargo.toml
@@ -94,18 +94,14 @@ logos-scaffold deploy --program-path \
   programs/target/riscv-guest/sacco_ledger-methods/sacco_ledger-guest/riscv32im-risc0-zkvm-elf/release/sacco_ledger.bin --json
 ```
 
-Previously recorded local sequencer program ID:
-`e45a5879831de87447a44046150d37d2036db0c44fc3cc519c6da7536a1422a7`. It was
-extracted with `logos-scaffold spel -- program-id <ProgramBinary>` and included
-in a local deployment block. Verify it again after rebuilding the local
-sequencer and guest. Public testnet deployment remains deferred in issue #4;
-it is not needed for local development.
+The deployed program account ID is specific to the guest binary and deployment.
+Capture the full `program_account_id` from `logos-scaffold deploy --json` and
+keep it with the guest commit used for that deployment. It can change when the
+guest binary changes, including changes that affect compiled debug metadata;
+there is no single canonical ID to hard-code in this README.
 
 ## Known gaps
 
-1. The ignored `.scaffold` cache was built with the previous LEZ and circuits
-   pins. Run `logos-scaffold setup` to rebuild from the v0.3.1 / circuits 0.5.7
-   pins above, then rerun the local `initialize` call before treating it as
-   verified.
-2. `sacco_core` does not submit IDL transactions yet.
-3. Refunds are handled off chain; the current ledger has no instruction to record a refund yet.
+1. `sacco_core` does not submit IDL transactions yet; use the repository's
+   local client in [`docs/deploy.md`](../../docs/deploy.md) for initialization.
+2. Refunds are handled off chain; the current ledger has no instruction to record a refund yet.

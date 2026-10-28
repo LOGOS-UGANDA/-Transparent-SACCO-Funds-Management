@@ -2,7 +2,7 @@ use std::{str::FromStr as _, time::Duration};
 
 use anyhow::{bail, Context as _};
 use borsh::BorshDeserialize as _;
-use lee::{account::ProgramShardSelector, AccountId};
+use lee::{AccountId, ProgramShardSelector};
 use wallet::{AccountIdentity, WalletCore};
 
 use sacco_ledger_local_client::initialize_instruction_data;

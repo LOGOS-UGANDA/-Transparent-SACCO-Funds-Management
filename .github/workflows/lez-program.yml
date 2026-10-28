@@ -14,6 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes pkg-config libpcsclite-dev
+
       - name: Install Rust 1.98.1
         uses: dtolnay/rust-toolchain@1.98.1
         with:

@@ -1,27 +1,8 @@
 # sacco_core
 
-Headless Logos **core module** for Transparent SACCO.
+Headless Logos core module for the Transparent SACCO attestation ledger. The product records off-chain deposits, loan activity, and expenses; it never receives, holds, or transfers SACCO money.
 
-## Role
-
-- Expose fee-transparency operations to `sacco_ui` (and CLI via `logoscore`)
-- Later: call the deployed `fee_transparency` LEZ program / wallet APIs
-- Optional: Logos Storage for release evidence CIDs
-
-## API (scaffold)
-
-| Method | Purpose |
-|--------|---------|
-| `getStatus` | Load / health check |
-| `registerInstitution` | Queue institution registration |
-| `payFees` | Queue locked fee payment |
-| `verifyPaymentByRef` | Queue payment lookup |
-| `requestRelease` | Queue multi-sig release request |
-| `approveRelease` | Queue release approval |
-
-Current implementations return JSON-shaped scaffold payloads and emit `operationQueued`. They do **not** yet submit LEZ transactions.
-
-Next: wire these methods to wallet/`spel` using [`artifacts/fee_transparency-idl.json`](../../artifacts/fee_transparency-idl.json) and the custody flow in [`docs/custody.md`](../../docs/custody.md) (`Initialize` → vault → `PayFees` → multi-sig → `ExecuteRelease`).
+The module exposes the instruction and query surface in [API.md](API.md). The current Phase 3 implementation is a UI and API scaffold. LEZ transaction submission and real account-state queries still require the wallet transport integration described in issue #5.
 
 ## Build
 
@@ -29,8 +10,8 @@ Requires Nix + [`logos-module-builder`](https://github.com/logos-co/logos-module
 
 ```bash
 cd modules/sacco_core
-nix build .#lgx          # package as .lgx for Basecamp / lgpm
-# or follow the core-module tutorial for logoscore install
+nix build .#lgx
+nix build .#lgx-portable
 ```
 
-Preview / install steps: [docs/basecamp-publishing.md](../../docs/basecamp-publishing.md).
+Install and preview steps: [docs/basecamp-publishing.md](../../docs/basecamp-publishing.md).

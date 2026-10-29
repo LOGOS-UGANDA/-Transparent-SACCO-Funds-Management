@@ -78,7 +78,7 @@ Structure (sections in order) and pinned content:
      - [ ] Unit tests per instruction plus CI running `RISC0_DEV_MODE=1 cargo test`
    - **Phase 2: Upgrade and deploy** — Step 4 · Logos Blockchain integration · Testnet v0.3, `logos-scaffold` · Done when: Program deployed on local sequencer and testnet with a working call.
      - [ ] Bump `lee_core` from v0.2.0 to the v0.3 release and fix breakages
-     - [ ] Switch docs and scripts from `logoscore`/`lgpm` to `logosctl`
+     - [x] Switch docs and scripts from `logoscore`/`lgpm` to `logosctl`
      - [ ] Deploy to local sequencer with `logos-scaffold`
      - [ ] Deploy to testnet and record the program ID in the repo
    - **Phase 3: Core and UI wiring** — Steps 5–7 · Backend and Frontend · Logos Core module, QML UI, Basecamp · Done when: One full flow works end to end inside Basecamp.

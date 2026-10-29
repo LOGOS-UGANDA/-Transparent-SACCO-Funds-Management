@@ -32,16 +32,16 @@ SACCO members cannot see how their savings, loans and expenses are handled. Reco
 
 ## The solution: a ledger, not a custodian
 
-The program is **the record, not the custodian of value**. Real money keeps moving through mobile money, bank accounts and cash; the chain attests to what happened:
+The program is **the record, not the custodian of value**. Savings deposits, loan disbursements and expense payments happen through the SACCO's existing off-chain channels, such as mobile money, bank accounts and cash. LEZ records and approves the related activity; it does not receive, hold or transfer that money. Amounts and references stored on LEZ are accounting records, not funds held by the program. Development and product work can stay on the local sequencer; public testnet deployment is deferred and is not required to build the product.
 
 | Capability | What it does |
 |------------|--------------|
-| Typed deposits | Every deposit recorded with type (savings vs share capital), reference and member confirmation |
-| Loan lifecycle | Apply → multi-sig approve → disburse (with evidence) → repay, all on chain |
-| Multi-sig expenses | Expenses need multiple approvals against a stated purpose and evidence before execution is recorded |
+| Typed deposits | Record the off-chain amount, type (savings vs share capital), reference and member confirmation |
+| Loan lifecycle | Applications, multi-sig approvals, and off-chain disbursement and repayment events are recorded on chain with evidence |
+| Multi-sig expenses | Expenses receive multiple on-chain approvals; payment happens off chain and its evidence is recorded |
 | Supervisory oversight | A Supervisory Committee is distinct from approvers — approve ≠ audit |
 | Per-SACCO config | Approver thresholds and role composition are configured per SACCO, not chain-wide |
-| Public totals, private members | SACCO totals are public and auditable; individual balances become private in the privacy phase |
+| Public totals, private members | Recorded SACCO totals are public and auditable; individual accounting records become private in the privacy phase |
 
 ## Architecture (Logos-native)
 
@@ -112,14 +112,15 @@ cd prototype && npm install && npm run dev
 ├── logos-repo.json             # Basecamp package-repository entry (filled at Phase 6)
 ├── docs/
 │   ├── roadmap-sacco-pivot.md  # plan of record
-│   ├── architecture.md · custody.md · idl.md · testing.md · basecamp-publishing.md
-│   └── superpowers/            # design and plan records
+│   ├── architecture.md · idl.md · testing.md · basecamp-publishing.md
+│   ├── custody.md             # superseded proposal, historical only
+│   └── superpowers/            # dated design history; older proposals may be superseded
 ├── artifacts/                  # program IDL
-├── programs/                   # LEZ program (fee_transparency → sacco_ledger, Phase 1)
+├── programs/                   # LEZ program: sacco_ledger (attestation ledger)
 ├── modules/
 │   ├── sacco_core/             # headless core module (scaffold)
 │   └── sacco_ui/               # QML UI module (scaffold)
-└── prototype/                  # earlier React + Hardhat demo — reference only
+└── prototype/                  # superseded React + Hardhat custody demo — reference only
 ```
 
 ## Contributing

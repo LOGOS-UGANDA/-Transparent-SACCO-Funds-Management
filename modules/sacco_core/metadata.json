@@ -5,7 +5,7 @@
   "type": "core",
   "interface": "universal",
   "category": "finance",
-  "description": "Core module for Transparent SACCO \u2014 wires the sacco_ui views to the sacco_ledger LEZ program: typed deposits, loan lifecycle, multi-sig expenses, period summaries.",
+  "description": "Core module for Transparent SACCO: attests to off-chain deposits, loan activity, and multi-sig expenses through sacco_ledger. It never holds or transfers SACCO funds.",
   "main": "sacco_core_plugin",
   "dependencies": [],
   "nix": {

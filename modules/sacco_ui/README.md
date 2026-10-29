@@ -1,6 +1,9 @@
 # sacco_ui
 
-Logos **UI module** (QML) for Transparent SACCO.
+Logos **UI module scaffold** (QML) for Transparent SACCO.
+
+The product records off-chain deposits, loans, and expenses on LEZ. SACCO
+money is not deposited into or transferred by this application.
 
 ## Role
 
@@ -8,7 +11,7 @@ Desktop UI hosted by Basecamp or `logos-standalone-app`. Calls `sacco_core` thro
 
 ## Screens (scaffold)
 
-Current `Main.qml` is a thin shell: status, demo pay/verify buttons, last core response. Full product screens (dashboard, institutions, releases) should follow `prototype/src/pages/` once core ↔ LEZ is live.
+Current `Main.qml` is a placeholder shell. Its fee-payment and payment-lookup buttons are legacy demos that return scaffold JSON; they do not represent the SACCO ledger flow and submit no LEZ transactions. Replace them with screens for recording and reviewing off-chain activity and its on-chain approvals. The React/Hardhat `prototype/` is a superseded custody demo, not a source for current product behavior.
 
 ## Build / preview
 

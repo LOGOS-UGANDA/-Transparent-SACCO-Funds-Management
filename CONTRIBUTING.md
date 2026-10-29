@@ -36,7 +36,7 @@ Agents are welcome here, under the same rules as humans plus the following, whic
 
 | Path | What lives there |
 |---|---|
-| `docs/` | Roadmap, architecture, custody, IDL, testing, publishing docs |
+| `docs/` | Roadmap, architecture, historical custody proposal, IDL, testing, publishing docs |
 | `programs/fee_transparency/` | LEZ program (Rust guest, RISC Zero) — becomes `sacco_ledger` in Phase 1 |
 | `modules/sacco_core/`, `modules/sacco_ui/` | Logos Core and QML UI module scaffolds |
 | `artifacts/` | Exported program IDL |

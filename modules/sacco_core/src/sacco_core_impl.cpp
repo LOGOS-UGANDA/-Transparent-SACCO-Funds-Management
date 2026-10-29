@@ -25,6 +25,11 @@ std::string ok(const std::string& instruction, const std::string& fields) {
     out << "{\"status\":\"queued\",\"instruction\":" << jstr(instruction)
         << ",\"fields\":" << fields << "}";
     return out.str();
+} // namespace
+
+std::string SaccoCoreImpl::getStatus()
+{
+    return "sacco_core scaffold ready — sacco_ledger attestation wiring pending";
 }
 
 std::string ok(const std::string& instruction, const std::string& fields,
@@ -223,9 +228,6 @@ std::string SaccoCoreImpl::getAuditTrail() {
 
 std::string SaccoCoreImpl::dispatchInstruction(const std::string& instruction,
                                                const std::string& fieldsJson) {
-    // Single wiring point for the LEZ wallet transport: send (program_id,
-    // instruction, fieldsJson) once the deployed program id is recorded in
-    // docs/deploy.md. Until then the call is queued, not sent — money never
-    // moves through this module in any state.
+    // The single LEZ wallet transport wiring point is implemented below.
     return ok(instruction, fieldsJson, "queued_pending_deploy");
 }

@@ -9,8 +9,8 @@
  * One method per instruction of `artifacts/sacco_ledger-idl.json` (plus the
  * read-only queries the UI views use). Each mutation method builds the exact
  * instruction payload (field names match the `Instruction` enum) and hands it
- * to dispatchInstruction(); the LEZ wallet transport plugs in there once the
- * deployed program id is recorded in docs/deploy.md.
+ * to dispatchInstruction(). The ledger attests to off-chain activity; it
+ * never holds or transfers SACCO funds.
  */
 class SaccoCoreImpl : public LogosModuleContext
 {
@@ -63,9 +63,8 @@ public:
     std::string listMyLoans(const std::string& memberAccount);
     std::string listPeriodSummaries();
     std::string getAuditTrail();
-
 logos_events:
-    /// Emitted on every dispatched instruction (UI feedback / audit trail feed).
+    /// Emitted when an instruction is queued (UI feedback).
     void operationQueued(const std::string& operation, const std::string& detail);
 
 private:

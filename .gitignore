@@ -27,3 +27,4 @@ src/artifacts/
 # Rust / LEZ
 target/
 **/methods/guest/target/
+.scaffold

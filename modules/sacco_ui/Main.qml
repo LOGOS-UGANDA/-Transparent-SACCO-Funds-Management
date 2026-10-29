@@ -48,7 +48,7 @@ Item {
         }
 
         Text {
-            text: "Every fee accounted for. Every shilling transparent."
+            text: "Off-chain SACCO activity. On-chain records and approvals."
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
             opacity: 0.8
@@ -70,7 +70,7 @@ Item {
             }
 
             Button {
-                text: "Demo: pay fees"
+                text: "Legacy demo: pay fees"
                 onClicked: callCore("payFees", [
                     "institution-account-id",
                     "Demo Payer",
@@ -80,7 +80,7 @@ Item {
             }
 
             Button {
-                text: "Demo: verify"
+                text: "Legacy demo: verify payment"
                 onClicked: callCore("verifyPaymentByRef", ["REF-DEMO-001"])
             }
         }
@@ -102,7 +102,7 @@ Item {
         }
 
         Text {
-            text: "UX reference screens live in prototype/src/pages/. Wire full flows after LEZ deploy."
+            text: "Legacy fee demo only. The SACCO ledger records off-chain activity; this app does not hold or transfer SACCO funds."
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
             opacity: 0.65

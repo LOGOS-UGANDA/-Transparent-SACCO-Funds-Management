@@ -6,7 +6,7 @@
   "category": "finance",
   "description": "Scaffold QML UI for the Transparent SACCO attestation ledger. SACCO payments stay off chain; this module does not hold or transfer funds.",
   "view": "Main.qml",
-  "icon": null,
+  "icon": "icons/sacco_ui.png",
   "dependencies": ["sacco_core"],
 
   "nix": {

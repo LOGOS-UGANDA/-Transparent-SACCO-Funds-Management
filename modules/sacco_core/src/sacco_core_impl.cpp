@@ -4,33 +4,30 @@
 
 namespace {
 
-/// JSON-escape a string value for payload construction.
 std::string jstr(const std::string& value) {
     std::ostringstream out;
     out << '"';
-    for (char c : value) {
+    for (unsigned char c : value) {
         switch (c) {
             case '"': out << "\\\""; break;
             case '\\': out << "\\\\"; break;
             case '\n': out << "\\n"; break;
-            default: out << c;
+            case '\r': out << "\\r"; break;
+            case '\t': out << "\\t"; break;
+            default:
+                if (c < 0x20) {
+                    out << "\\u00" << "0123456789abcdef"[c >> 4]
+                        << "0123456789abcdef"[c & 0x0f];
+                } else {
+                    out << static_cast<char>(c);
+                }
         }
     }
     out << '"';
     return out.str();
 }
 
-std::string ok(const std::string& instruction, const std::string& fields) {
-    std::ostringstream out;
-    out << "{\"status\":\"queued\",\"instruction\":" << jstr(instruction)
-        << ",\"fields\":" << fields << "}";
-    return out.str();
-} // namespace
-
-std::string SaccoCoreImpl::getStatus()
-{
-    return "sacco_core scaffold ready — sacco_ledger attestation wiring pending";
-}
+}  // namespace
 
 std::string ok(const std::string& instruction, const std::string& fields,
                const std::string& programStatus) {
@@ -41,8 +38,6 @@ std::string ok(const std::string& instruction, const std::string& fields,
     return out.str();
 }
 
-}  // namespace
-
 std::string SaccoCoreImpl::getStatus() {
     return "{\"module\":\"sacco_core\",\"api\":\"sacco_ledger\",\"instructions\":18}";
 }
@@ -50,7 +45,7 @@ std::string SaccoCoreImpl::getStatus() {
 // ── Setup ────────────────────────────────────────────────────────────────
 
 std::string SaccoCoreImpl::initialize() {
-    emit operationQueued("initialize", "{}");
+    operationQueued("initialize", "{}");
     return dispatchInstruction("Initialize", "{}");
 }
 
@@ -60,24 +55,24 @@ std::string SaccoCoreImpl::registerSacco(const std::string& name,
     const std::string fields = "{\"name\":" + jstr(name) +
                                ",\"registration_number\":" + jstr(registrationNumber) +
                                ",\"treasury\":" + jstr(treasury) + "}";
-    emit operationQueued("register_sacco", fields);
+    operationQueued("register_sacco", fields);
     return dispatchInstruction("RegisterSacco", fields);
 }
 
 std::string SaccoCoreImpl::verifySacco() {
-    emit operationQueued("verify_sacco", "{}");
+    operationQueued("verify_sacco", "{}");
     return dispatchInstruction("VerifySacco", "{}");
 }
 
 std::string SaccoCoreImpl::addApprover(const std::string& approver) {
     const std::string fields = "{\"approver\":" + jstr(approver) + "}";
-    emit operationQueued("add_approver", fields);
+    operationQueued("add_approver", fields);
     return dispatchInstruction("AddApprover", fields);
 }
 
 std::string SaccoCoreImpl::addSupervisor(const std::string& supervisor) {
     const std::string fields = "{\"supervisor\":" + jstr(supervisor) + "}";
-    emit operationQueued("add_supervisor", fields);
+    operationQueued("add_supervisor", fields);
     return dispatchInstruction("AddSupervisor", fields);
 }
 
@@ -85,7 +80,7 @@ std::string SaccoCoreImpl::addMember(const std::string& memberAccount,
                                      const std::string& identity) {
     const std::string fields = "{\"identity\":" + jstr(identity) +
                                ",\"member_account\":" + jstr(memberAccount) + "}";
-    emit operationQueued("add_member", fields);
+    operationQueued("add_member", fields);
     return dispatchInstruction("AddMember", fields);
 }
 
@@ -99,13 +94,13 @@ std::string SaccoCoreImpl::recordDeposit(const std::string& memberAccount,
                                ",\"amount\":" + amount +
                                ",\"deposit_type\":" + jstr(depositType) +
                                ",\"reference\":" + jstr(reference) + "}";
-    emit operationQueued("record_deposit", fields);
+    operationQueued("record_deposit", fields);
     return dispatchInstruction("RecordDeposit", fields);
 }
 
 std::string SaccoCoreImpl::confirmDeposit(const std::string& depositAccount) {
     const std::string fields = "{\"deposit_account\":" + jstr(depositAccount) + "}";
-    emit operationQueued("confirm_deposit", fields);
+    operationQueued("confirm_deposit", fields);
     return dispatchInstruction("ConfirmDeposit", fields);
 }
 
@@ -114,19 +109,19 @@ std::string SaccoCoreImpl::confirmDeposit(const std::string& depositAccount) {
 std::string SaccoCoreImpl::applyLoan(const std::string& amount, const std::string& purpose) {
     const std::string fields = "{\"amount\":" + amount +
                                ",\"purpose\":" + jstr(purpose) + "}";
-    emit operationQueued("apply_loan", fields);
+    operationQueued("apply_loan", fields);
     return dispatchInstruction("ApplyLoan", fields);
 }
 
 std::string SaccoCoreImpl::approveLoan(const std::string& loanAccount) {
     const std::string fields = "{\"loan_account\":" + jstr(loanAccount) + "}";
-    emit operationQueued("approve_loan", fields);
+    operationQueued("approve_loan", fields);
     return dispatchInstruction("ApproveLoan", fields);
 }
 
 std::string SaccoCoreImpl::rejectLoan(const std::string& loanAccount) {
     const std::string fields = "{\"loan_account\":" + jstr(loanAccount) + "}";
-    emit operationQueued("reject_loan", fields);
+    operationQueued("reject_loan", fields);
     return dispatchInstruction("RejectLoan", fields);
 }
 
@@ -134,7 +129,7 @@ std::string SaccoCoreImpl::disburseLoan(const std::string& loanAccount,
                                         const std::string& evidenceCid) {
     const std::string fields = "{\"loan_account\":" + jstr(loanAccount) +
                                ",\"evidence_cid\":" + jstr(evidenceCid) + "}";
-    emit operationQueued("disburse_loan", fields);
+    operationQueued("disburse_loan", fields);
     return dispatchInstruction("DisburseLoan", fields);
 }
 
@@ -142,7 +137,7 @@ std::string SaccoCoreImpl::recordRepayment(const std::string& loanAccount,
                                            const std::string& amount) {
     const std::string fields = "{\"loan_account\":" + jstr(loanAccount) +
                                ",\"amount\":" + amount + "}";
-    emit operationQueued("record_repayment", fields);
+    operationQueued("record_repayment", fields);
     return dispatchInstruction("RecordRepayment", fields);
 }
 
@@ -154,25 +149,25 @@ std::string SaccoCoreImpl::proposeExpense(const std::string& amount,
     const std::string fields = "{\"amount\":" + amount +
                                ",\"purpose\":" + jstr(purpose) +
                                ",\"evidence_cid\":" + jstr(evidenceCid) + "}";
-    emit operationQueued("propose_expense", fields);
+    operationQueued("propose_expense", fields);
     return dispatchInstruction("ProposeExpense", fields);
 }
 
 std::string SaccoCoreImpl::approveExpense(const std::string& expenseAccount) {
     const std::string fields = "{\"expense_account\":" + jstr(expenseAccount) + "}";
-    emit operationQueued("approve_expense", fields);
+    operationQueued("approve_expense", fields);
     return dispatchInstruction("ApproveExpense", fields);
 }
 
 std::string SaccoCoreImpl::rejectExpense(const std::string& expenseAccount) {
     const std::string fields = "{\"expense_account\":" + jstr(expenseAccount) + "}";
-    emit operationQueued("reject_expense", fields);
+    operationQueued("reject_expense", fields);
     return dispatchInstruction("RejectExpense", fields);
 }
 
 std::string SaccoCoreImpl::executeExpense(const std::string& expenseAccount) {
     const std::string fields = "{\"expense_account\":" + jstr(expenseAccount) + "}";
-    emit operationQueued("execute_expense", fields);
+    operationQueued("execute_expense", fields);
     return dispatchInstruction("ExecuteExpense", fields);
 }
 
@@ -180,7 +175,7 @@ std::string SaccoCoreImpl::executeExpense(const std::string& expenseAccount) {
 
 std::string SaccoCoreImpl::postPeriodSummary(const std::string& label) {
     const std::string fields = "{\"label\":" + jstr(label) + "}";
-    emit operationQueued("post_period_summary", fields);
+    operationQueued("post_period_summary", fields);
     return dispatchInstruction("PostPeriodSummary", fields);
 }
 

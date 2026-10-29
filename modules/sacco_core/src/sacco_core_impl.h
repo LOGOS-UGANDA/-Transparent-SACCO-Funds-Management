@@ -31,7 +31,7 @@ public:
     // ── Deposits ─────────────────────────────────────────────────────────
     std::string recordDeposit(const std::string& memberAccount,
                               const std::string& amount,
-                              const std::string& depositType,   // "savings" | "shareCapital"
+                              const std::string& depositType,
                               const std::string& reference);
     std::string confirmDeposit(const std::string& depositAccount);
 

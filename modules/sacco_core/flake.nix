@@ -20,7 +20,7 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
       cargoVendor = pkgs.rustPlatform.importCargoLock {
-        lockFile = "${sacco_programs}/sacco_ledger/ffi/Cargo.lock";
+        lockFile = ../../programs/sacco_ledger/ffi/Cargo.lock;
         outputHashes = {
           "lee_core-0.1.0" = "sha256-Tf2YnXIqbAmz2BnEk747WEOnAW6xOlszoe2mn85hRLU=";
         };

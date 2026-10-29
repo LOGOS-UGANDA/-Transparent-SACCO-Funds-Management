@@ -94,22 +94,11 @@ std::string jstr(const std::string& value) {
 }  // namespace
 
 std::string SaccoCoreImpl::getStatus() {
-    json status{{"module", "sacco_core"}, {"api", "sacco_ledger"}, {"instructions", 18}};
-    if (!isContextReady()) return status.dump();
-    logos::CallError coreError;
-    const json accounts = modules().lez_core.list_accounts(&coreError);
-    status["wallet"] = coreError.ok() && accounts.is_array() ? "ready" : "unavailable";
-    if (!instancePersistencePath().empty()) {
-        const std::string configPath = instancePersistencePath() + "/sacco-indexer-config.json";
-        std::ofstream config(configPath, std::ios::trunc);
-        config << R"({"consensus_info_polling_interval":"1s","bedrock_config":{"addr":"http://localhost:8080","backoff":{"start_delay":"100ms","max_retries":5}},"channel_id":"8301010101010101010101010101010101010101010101010101010101010101","allow_chain_reset":true})";
-        config.close();
-        const auto started = modules().lez_indexer_module.start_indexer(configPath);
-        status["indexer"] = started == 0 ? "starting" : "unavailable";
-        status["indexer_status"] = json::parse(modules().lez_indexer_module.getStatus(), nullptr, false);
-    } else {
-        status["indexer"] = "unavailable";
-    }
+    // Basecamp calls this during view startup. Keep the health endpoint local and
+    // non-blocking: starting the indexer and making synchronous cross-module RPCs
+    // here stalls the module process during host initialization.
+    json status{{"module", "sacco_core"}, {"api", "sacco_ledger"},
+                {"instructions", 18}, {"wallet", isContextReady() ? "configured" : "available"}};
     return status.dump();
 }
 
@@ -361,12 +350,15 @@ std::string SaccoCoreImpl::listMyDeposits(const std::string& memberAccount) {
 std::string SaccoCoreImpl::readIndexedAccount(const std::string& kind,
                                               const std::string& accountId) {
     try {
+        // The pinned indexer getAccount endpoint returns account metadata without shard bytes.
+        // Read the public account through the wallet's sequencer-backed query instead; its
+        // response includes the live shard payloads required by the Rust IDL decoder.
         const std::string id = isHexAccountId(accountId)
-            ? modules().lez_core.account_id_to_base58(accountId)
-            : accountId;
-        const json indexed = json::parse(modules().lez_indexer_module.getAccount(id), nullptr, false);
-        if (!indexed.is_object()) return errorJson("indexer account is unavailable or still syncing");
-        const json shards = indexed.value("shards", json::array());
+            ? accountId
+            : modules().lez_core.account_id_from_base58(accountId);
+        const json account = json::parse(modules().lez_core.get_account_public(id), nullptr, false);
+        if (!account.is_object()) return errorJson("sequencer account is unavailable or still syncing");
+        const json shards = account.value("shards", json::array());
         if (shards.is_array()) {
             for (const auto& shard : shards) {
                 if (!shard.is_object() || !shard.contains("data") || !shard["data"].is_string()) continue;
@@ -386,11 +378,11 @@ std::string SaccoCoreImpl::readIndexedAccount(const std::string& kind,
                 const json request = {{"kind", kind}, {"bytes", bytes}};
                 const json decoded = json::parse(
                     rustResult(sacco_ledger_decode_shard_json(request.dump().c_str())), nullptr, false);
-                if (decoded.is_object()) return resultJson("indexed", decoded);
+                if (decoded.is_object()) return resultJson("sequencer", decoded);
             }
         }
-        return resultJson("indexed_metadata_only", {{"account_id", id}, {"account", indexed},
-            {"state", nullptr}, {"reason", "lez_indexer_module.getAccount does not return shard bytes"}});
+        return resultJson("sequencer_account", {{"account_id", id}, {"account", account},
+            {"state", nullptr}, {"reason", "sequencer account has no decodable SACCO shard"}});
     } catch (const std::exception& error) {
         return errorJson(error.what());
     }

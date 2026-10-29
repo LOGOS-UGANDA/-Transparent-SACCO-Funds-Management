@@ -4306,7 +4306,8 @@
     "root": {
       "inputs": {
         "logos-module-builder": "logos-module-builder",
-        "sacco_core": "sacco_core"
+        "sacco_core": "sacco_core",
+        "sacco_programs": "sacco_programs"
       }
     },
     "rust-overlay": {
@@ -4362,6 +4363,18 @@
       },
       "original": {
         "path": "../sacco_core",
+        "type": "path"
+      },
+      "parent": []
+    },
+    "sacco_programs": {
+      "flake": false,
+      "locked": {
+        "path": "../../programs",
+        "type": "path"
+      },
+      "original": {
+        "path": "../../programs",
         "type": "path"
       },
       "parent": []

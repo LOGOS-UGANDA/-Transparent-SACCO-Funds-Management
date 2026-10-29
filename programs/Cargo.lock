@@ -7065,6 +7065,8 @@ dependencies = [
  "lee",
  "lee_core",
  "sacco_ledger_core",
+ "serde",
+ "serde_json",
  "tokio",
  "wallet",
 ]

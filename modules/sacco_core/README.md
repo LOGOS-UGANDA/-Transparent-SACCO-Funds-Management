@@ -2,7 +2,7 @@
 
 Headless Logos core module for the Transparent SACCO attestation ledger. The product records off-chain deposits, loan activity, and expenses; it never receives, holds, or transfers SACCO money.
 
-The module exposes the instruction and query surface in [API.md](API.md). The current Phase 3 implementation is a UI and API scaffold. LEZ transaction submission and real account-state queries still require the wallet transport integration described in issue #5.
+The intended module contract is documented in [API.md](API.md). The Rust local client now submits IDL-shaped public instructions through the pinned LEZ wallet and reads known account shards. The C++ module's `dispatchInstruction()` and query methods are not wired to this client yet, so the Basecamp UI still does not submit transactions or display live ledger state.
 
 ## Build
 

@@ -12,7 +12,11 @@ Item {
     function refresh() {
         if (!bridge) return
         try {
-            trail = JSON.parse(bridge.call("getAuditTrail", [])) || []
+            const response = JSON.parse(bridge.call("getAuditTrail", []))
+            trail = response.data && Array.isArray(response.data) ? response.data : []
+            message = trail.length
+                ? "Showing indexed transaction records; the current indexer response does not include decodable shard data."
+                : "No indexed transactions are available. Check indexer sync status."
         } catch (e) { message = "sacco_core not reachable: " + e }
     }
     Component.onCompleted: refresh()
@@ -34,14 +38,7 @@ Item {
                 width: ListView.view.width
                 ColumnLayout {
                     width: parent.width
-                    Label { text: modelData.kind + " — " + modelData.summary; font.bold: true }
-                    Label { text: modelData.detail; visible: modelData.detail !== "" ; wrapMode: Text.Wrap; Layout.fillWidth: true }
-                    Label {
-                        text: "evidence: " + modelData.evidence_cid
-                        visible: modelData.evidence_cid !== ""
-                        color: "#2f6fdb"
-                    }
-                    Label { text: "recorded by " + modelData.recorded_by; font.italic: true }
+                    Label { text: JSON.stringify(modelData); wrapMode: Text.Wrap; Layout.fillWidth: true }
                 }
             }
         }

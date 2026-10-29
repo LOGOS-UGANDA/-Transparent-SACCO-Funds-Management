@@ -60,6 +60,28 @@ Item {
             Layout.fillWidth: true
         }
 
+        GroupBox {
+            title: "Local LEZ transaction context"
+            Layout.fillWidth: true
+            GridLayout {
+                anchors.fill: parent
+                columns: 2
+                TextField { id: programId; placeholderText: "sacco_ledger program account ID"; Layout.fillWidth: true }
+                TextField { id: saccoId; placeholderText: "SACCO account ID"; Layout.fillWidth: true }
+                TextField { id: feePayerId; placeholderText: "funded fee payer account ID"; Layout.fillWidth: true }
+                TextField { id: signerId; placeholderText: "selected signer account ID"; Layout.fillWidth: true }
+                Button {
+                    text: "Set transaction context"
+                    onClicked: callCore("setLedgerContext", [programId.text, saccoId.text, feePayerId.text, signerId.text])
+                }
+                Button {
+                    text: "Create public account"
+                    onClicked: callCore("createPublicAccount", [])
+                }
+                Button { text: "Initialize ledger"; onClicked: callCore("initialize", []) }
+            }
+        }
+
         RowLayout {
             spacing: 12
             Layout.fillWidth: true

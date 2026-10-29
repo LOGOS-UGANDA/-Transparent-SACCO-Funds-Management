@@ -7,10 +7,10 @@
   "category": "finance",
   "description": "Core module for Transparent SACCO: attests to off-chain deposits, loan activity, and multi-sig expenses through sacco_ledger. It never holds or transfers SACCO funds.",
   "main": "sacco_core_plugin",
-  "dependencies": [],
+  "dependencies": ["lez_core", "lez_indexer_module"],
   "nix": {
     "packages": {
-      "build": [],
+      "build": ["cargo", "rustc", "llvmPackages.libclang"],
       "runtime": []
     },
     "external_libraries": [],

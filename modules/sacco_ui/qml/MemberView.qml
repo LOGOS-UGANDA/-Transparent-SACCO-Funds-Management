@@ -16,10 +16,16 @@ Item {
     function refresh() {
         if (!bridge || memberAccount === "") return
         try {
-            saccoTotals = JSON.parse(bridge.call("getSacco", []))
-            myMember = JSON.parse(bridge.call("getMember", [memberAccount]))
-            myDeposits = JSON.parse(bridge.call("listMyDeposits", [memberAccount])) || []
-            myLoans = JSON.parse(bridge.call("listMyLoans", [memberAccount])) || []
+            const sacco = JSON.parse(bridge.call("getSacco", []))
+            const member = JSON.parse(bridge.call("getMember", [memberAccount]))
+            saccoTotals = sacco.data && sacco.data.state ? sacco.data.state : ({})
+            myMember = member.data && member.data.state ? member.data.state : ({})
+            myDeposits = []
+            myLoans = []
+            if (sacco.status === "indexed_metadata_only" || member.status === "indexed_metadata_only")
+                message = "The indexer sees these accounts, but its current API omits shard bytes, so balances and deposit records cannot be decoded yet."
+            else
+                message = ""
         } catch (e) {
             message = "sacco_core not reachable: " + e
         }
@@ -32,6 +38,15 @@ Item {
         spacing: 12
 
         Label { text: "My account"; font.bold: true; font.pixelSize: 18 }
+        RowLayout {
+            TextField {
+                Layout.fillWidth: true
+                placeholderText: "member ledger account ID"
+                text: root.memberAccount
+                onTextChanged: root.memberAccount = text
+            }
+            Button { text: "Refresh"; onClicked: root.refresh() }
+        }
         Label { text: root.message; color: "firebrick"; visible: root.message !== "" }
 
         GroupBox {
@@ -79,7 +94,7 @@ Item {
             Button {
                 text: "Confirm selected deposit"
                 enabled: root.myDeposits.length > 0
-                onClicked: root.call("confirmDeposit", [root.myDeposits[0].account_id])
+                onClicked: root.call("confirmDeposit", [root.myDeposits[0].account_id, root.memberAccount])
             }
         }
 
@@ -103,9 +118,10 @@ Item {
                 validator: IntValidator { bottom: 1 }
             }
             TextField { id: loanPurpose; placeholderText: "purpose" }
+            TextField { id: loanAccount; placeholderText: "new loan account" }
             Button {
                 text: "Apply for loan"
-                onClicked: root.call("applyLoan", [loanAmount.text, loanPurpose.text])
+                onClicked: root.call("applyLoan", [root.memberAccount, loanAccount.text, loanAmount.text, loanPurpose.text])
             }
         }
     }

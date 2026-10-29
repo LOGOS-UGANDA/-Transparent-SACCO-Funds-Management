@@ -29,6 +29,7 @@ Item {
             GridLayout {
                 columns: 2
                 TextField { id: depMember; placeholderText: "member account" ; Layout.fillWidth: true }
+                TextField { id: depAccount; placeholderText: "new deposit account"; Layout.fillWidth: true }
                 TextField { id: depAmount; placeholderText: "amount"; validator: IntValidator { bottom: 1 } }
                 ComboBox {
                     id: depType
@@ -39,7 +40,7 @@ Item {
             Button {
                 text: "Record deposit"
                 onClicked: root.call("recordDeposit",
-                    [depMember.text, depAmount.text, depType.currentText, depRef.text])
+                    [depMember.text, depAccount.text, depAmount.text, depType.currentText, depRef.text])
             }
         }
 
@@ -49,13 +50,15 @@ Item {
             GridLayout {
                 columns: 2
                 TextField { id: expAmount; placeholderText: "amount"; validator: IntValidator { bottom: 1 } }
+                TextField { id: expAccount; placeholderText: "new expense account"; Layout.fillWidth: true }
                 TextField { id: expPurpose; placeholderText: "purpose"; Layout.fillWidth: true }
                 TextField { id: expCid; placeholderText: "evidence CID (Logos Storage)"; Layout.fillWidth: true }
+                TextField { id: expApprovals; placeholderText: "required approvals"; text: "2"; validator: IntValidator { bottom: 1; top: 32 } }
             }
             Button {
                 text: "Propose expense"
                 onClicked: root.call("proposeExpense",
-                    [expAmount.text, expPurpose.text, expCid.text])
+                    [expAccount.text, expAmount.text, expPurpose.text, expCid.text, expApprovals.text])
             }
         }
 
@@ -74,21 +77,31 @@ Item {
             GridLayout {
                 columns: 2
                 TextField { id: disbAccount; placeholderText: "approved loan account"; Layout.fillWidth: true }
+                TextField { id: disbMember; placeholderText: "member account"; Layout.fillWidth: true }
                 TextField { id: disbCid; placeholderText: "disbursement evidence CID" }
+                TextField { id: disbPrincipal; placeholderText: "principal"; validator: IntValidator { bottom: 1 } }
                 Button {
                     text: "Record disbursement"
-                    onClicked: root.call("disburseLoan", [disbAccount.text, disbCid.text])
+                    onClicked: root.call("disburseLoan", [disbMember.text, disbAccount.text, disbCid.text, disbPrincipal.text])
                 }
+                TextField { id: repMember; placeholderText: "member account"; Layout.fillWidth: true }
                 TextField { id: repAccount; placeholderText: "loan account"; Layout.fillWidth: true }
                 TextField { id: repAmount; placeholderText: "repayment amount"; validator: IntValidator { bottom: 1 } }
+                TextField { id: repReference; placeholderText: "repayment reference"; Layout.fillWidth: true }
                 Button {
                     text: "Record repayment"
-                    onClicked: root.call("recordRepayment", [repAccount.text, repAmount.text])
+                    onClicked: root.call("recordRepayment", [repMember.text, repAccount.text, repAmount.text, repReference.text])
                 }
+                TextField { id: executionAmount; placeholderText: "execution amount"; validator: IntValidator { bottom: 1 } }
+                TextField { id: executionEvidence; placeholderText: "off-chain payment reference"; Layout.fillWidth: true }
                 Button {
                     text: "Execute approved expense"
-                    onClicked: root.call("executeExpense", [expenseAccount.text])
+                    onClicked: root.call("executeExpense", [expenseAccount.text, executionAmount.text, executionEvidence.text])
                 }
+            }
+            RowLayout {
+                TextField { id: approvalThreshold; placeholderText: "new threshold"; text: "2"; validator: IntValidator { bottom: 1; top: 32 } }
+                Button { text: "Set approval threshold"; onClicked: root.call("setRequiredApprovals", [approvalThreshold.text]) }
             }
         }
     }

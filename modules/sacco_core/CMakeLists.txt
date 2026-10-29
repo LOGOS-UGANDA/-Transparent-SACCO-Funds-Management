@@ -46,7 +46,6 @@ add_custom_command(
     DEPENDS
         "${SACCO_PROGRAMS_ROOT}/sacco_ledger/ffi/Cargo.lock"
         "${SACCO_PROGRAMS_ROOT}/sacco_ledger/ffi/src/lib.rs"
-        "${SACCO_PROGRAMS_ROOT}/sacco_ledger/ffi/.cargo/config.toml"
         "${SACCO_PROGRAMS_ROOT}/sacco_ledger/idl/src/lib.rs"
     COMMENT "Building the Rust sacco_ledger IDL/client bridge"
     VERBATIM

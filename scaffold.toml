@@ -21,6 +21,14 @@ pin = "d3af2972f51d9c542537d80d60ad8d20282ddcd1"
 build = "nix-flake"
 attr = "cli"
 
+[modules.sacco_core]
+flake = "path:./modules/sacco_core#lgx"
+role = "project"
+
+[modules.sacco_ui]
+flake = "path:./modules/sacco_ui#lgx"
+role = "project"
+
 [wallet]
 home_dir = ".scaffold/wallet"
 

@@ -5,7 +5,7 @@
   "type": "core",
   "interface": "universal",
   "category": "finance",
-  "description": "Core module for Transparent SACCO — fee locking, verification, and multi-sig release APIs for the LEZ fee_transparency program.",
+  "description": "Scaffold core module for Transparent SACCO. Planned IDL-backed records and approvals for off-chain SACCO activity; no custody or money transfers.",
   "main": "sacco_core_plugin",
   "dependencies": [],
 

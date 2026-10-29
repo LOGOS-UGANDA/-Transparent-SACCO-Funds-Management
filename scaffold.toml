@@ -3,11 +3,11 @@ version = "0.2.0"
 
 [repos.lez]
 source = "https://github.com/logos-blockchain/logos-execution-zone.git"
-pin = "cf3639d8252040d13b3d4e933feb19b42c76e14a"
+pin = "1a003bfbfb89fcf987f62975cd08a401169e1b8c"
 
 [repos.spel]
 source = "https://github.com/logos-co/spel.git"
-pin = "73fc462eb8f0a4d00f1a846437c627ec2e523f83"
+pin = "c6f73ce21e4805f8430f03afdbdedf0b7e479a5e"
 
 [repos.basecamp]
 source = "https://github.com/logos-co/logos-basecamp.git"
@@ -37,4 +37,4 @@ port = 3040
 risc0_dev_mode = true
 
 [circuits]
-version = "0.4.1"
+version = "0.5.7"

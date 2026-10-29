@@ -83,22 +83,28 @@ cargo +risc0 build --release --target riscv32im-risc0-zkvm-elf
 
 ## Local deploy
 
-Built and deployed against a `logos-scaffold` 0.4.0 local sequencer on
-`lee_core` v0.3.1:
+The valid RISC Zero `ProgramBinary` is produced by building the methods crate.
+For the pinned LEZ/SPEL/circuits pairing and the scaffold 0.4.x local block-size
+workaround, follow [`docs/deploy.md`](../../docs/deploy.md).
 
 ```bash
-logos-scaffold localnet start
-logos-scaffold deploy --program-path \
-  programs/sacco_ledger/methods/guest/target/riscv32im-risc0-zkvm-elf/release/sacco_ledger --json
+RUSTFLAGS='--cfg getrandom_backend="custom"' cargo +risc0 build --release \
+  --target riscv32im-risc0-zkvm-elf \
+  --manifest-path programs/sacco_ledger/methods/guest/Cargo.toml
 ```
 
-The deploy prints the risc0 image id for the guest ELF; record it here when it
-changes. Testnet deployment stays with issue #4 and
-[`docs/deploy.md`](../../docs/deploy.md).
+Follow the tested scaffold 0.4.0 workflow in [`docs/deploy.md`](../../docs/deploy.md)
+for local setup, the 1 MiB block-size preparation, deployment, and Initialize
+verification. The latest recorded local run deployed header/program account
+`Ge4zuh3t2Kkg9y59YR9HCmaKwrqX18DvJSV7XRwg55eQ`; Initialize succeeded with
+transaction `074afc038e148a98213f2b6f01a1e04ca38914045baeb0b51ad160ebaaa246fc`
+and verified `ProgramConfig.version = 1` at config PDA
+`GHmW3j89uVbH3NnLzGNUEzfuPLLCa1cBWZdRpczq6vXm`. Program account IDs are
+deployment outputs and may change with guest builds; the runbook preserves the
+commands and full result for this deployment.
 
 ## Known gaps
 
-1. `logos-scaffold` 0.4.0 exposes no transaction subcommand, so the `initialize`
-   call is deferred to the wallet/Basecamp path in `docs/deploy.md`.
-2. `sacco_core` does not submit IDL transactions yet.
-3. No refund path.
+1. `sacco_core` does not submit IDL transactions yet; use the repository's
+   local client in [`docs/deploy.md`](../../docs/deploy.md) for initialization.
+2. Refunds are handled off chain; the current ledger has no instruction to record a refund yet.

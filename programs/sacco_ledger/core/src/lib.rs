@@ -43,7 +43,8 @@ pub(crate) fn is_valid_period_label(label: &str) -> bool {
     year > 0 && (1..=12).contains(&month)
 }
 
-/// Deposit record type: withdrawable savings vs member ownership (share capital).
+/// Off-chain deposit classification: savings vs member ownership (share capital).
+/// This distinguishes the ledger record; it does not make funds withdrawable on chain.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
 )]

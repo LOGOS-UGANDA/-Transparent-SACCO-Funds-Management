@@ -4,6 +4,7 @@ members = [
     "sacco_ledger",
     "sacco_ledger/idl",
     "sacco_ledger/methods",
+    "sacco_ledger/client",
 ]
 exclude = [
     "sacco_ledger/methods/guest",

@@ -6,20 +6,20 @@ Transparent SACCO is a Logos stack product: LEZ program + core module + UI modul
 
 ### LEZ program — `programs/sacco_ledger`
 
-On-chain (zone) logic for institutions, fee categories, payments, release requests, and multi-sig approvals. Prefer **public** LEZ accounts for the audit trail so payers can verify allocations without a privileged indexer.
+On-chain (zone) logic for SACCOs, members, deposits, loans, expenses, governance, and period summaries. LEZ stores ledger records and approval state. Actual savings deposits, loan disbursements, repayments, and expense payments happen off chain and are evidenced by references or CIDs.
 
-**Attestation model:** the program records and approves off-chain money events — it holds no value and performs no token transfers. (The earlier custody design — institution vault PDA + category ledger — is kept dormant; see [custody.md](./custody.md).)
+**Attestation model:** the program records and approves off-chain money events. It does not receive, hold, or transfer SACCO money. `ExecuteExpense` records that an approved off-chain payment was made; it does not make the payment. The former fee-custody proposal is historical only; see [custody.md](./custody.md).
 
 | Instruction | Purpose |
 |-------------|---------|
 | `Initialize` | Create the config PDA |
-| `RegisterSacco` | Onboard a SACCO (admin, treasury, per-SACCO approver config) |
+| `RegisterSacco` | Register a SACCO and its governance config; no funds are deposited |
 | `VerifySacco` | Mark the SACCO verified |
 | `AddApprover` / `AddSupervisor` | Multi-sig approvers and the separate Supervisory Committee |
 | `AddMember` | Register a member identity |
-| `RecordDeposit` / `ConfirmDeposit` | Treasurer records (savings vs share capital), member confirms |
-| `ApplyLoan` → `ApproveLoan` / `RejectLoan` → `DisburseLoan` → `RecordRepayment` | Loan lifecycle with multi-sig and evidence |
-| `ProposeExpense` → `ApproveExpense` / `RejectExpense` → `ExecuteExpense` | Multi-sig expenses; execution records the off-chain payment proof |
+| `RecordDeposit` / `ConfirmDeposit` | Attest to an off-chain savings or share-capital deposit; member confirms the record |
+| `ApplyLoan` → `ApproveLoan` / `RejectLoan` → `DisburseLoan` → `RecordRepayment` | Record loan status, approvals, and evidence of off-chain disbursement and repayment |
+| `ProposeExpense` → `ApproveExpense` / `RejectExpense` → `ExecuteExpense` | Approve an expense on chain; record evidence of its off-chain payment |
 | `PostPeriodSummary` | Public snapshot of SACCO totals |
 
 Implementation: Rust guest for the Logos Execution Environment (LEE / RISC Zero), SPEL macros, deployed with LEZ wallet tooling — not Solidity/EVM.
@@ -30,13 +30,16 @@ IDL: [idl.md](./idl.md) · [`artifacts/sacco_ledger-idl.json`](../artifacts/sacc
 
 Headless Logos module that:
 
-- Will talk to the LEZ wallet / program APIs using the IDL (scaffold APIs today)
+- Is currently a scaffold; its existing fee-payment and release methods are legacy stubs, not the current SACCO API
+- Will submit `sacco_ledger` IDL instructions to record and approve off-chain SACCO activity
 - Optionally stores evidence blobs via Logos Storage (CIDs referenced on-chain)
 - Exposes methods the UI calls over Logos IPC
 
 ### UI module — `modules/sacco_ui`
 
-QML UI for dashboard, institutions, pay fees, verify payment, and releases. Runs inside:
+QML UI scaffold for future member, treasurer, committee, and auditor views. The
+current fee-payment and release controls are explicitly marked as legacy demos.
+Runs inside:
 
 - **Basecamp** — discovered via Package Manager after the user adds this repo’s catalogue
 - **`logos-standalone-app`** — focused desktop binary for institutions that do not want the full shell
@@ -60,6 +63,6 @@ There is no central app-store gatekeeper. Discovery is repository-based. See [ba
 
 | Doc | Topic |
 |-----|--------|
-| [custody.md](./custody.md) | How fees are locked and released on LEZ |
+| [custody.md](./custody.md) | Superseded custody proposal retained for history; not current design |
 | [idl.md](./idl.md) | Client IDL artifact and regeneration |
 | [basecamp-publishing.md](./basecamp-publishing.md) | Shipping modules to Basecamp |

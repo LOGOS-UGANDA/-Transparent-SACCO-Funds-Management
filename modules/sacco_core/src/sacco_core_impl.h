@@ -6,8 +6,9 @@
 /**
  * Transparent SACCO core module.
  *
- * Exposes product operations to UI modules / CLI. LEZ wallet / program calls
- * will be wired here once the fee_transparency program is deployed.
+ * Scaffold APIs for UI modules / CLI. These placeholder methods are not yet
+ * wired to the sacco_ledger IDL; the product records off-chain SACCO activity
+ * and does not custody or transfer SACCO funds.
  */
 class SaccoCoreImpl : public LogosModuleContext
 {
@@ -15,24 +16,24 @@ public:
     /// Health check for Basecamp / standalone load verification.
     std::string getStatus();
 
-    /// Scaffold: returns a JSON-shaped summary describing the planned LEZ call.
+    /// Legacy fee-transparency scaffold; not part of the current ledger API.
     std::string registerInstitution(
         const std::string& name,
         const std::string& registrationNumber,
         const std::string& institutionType,
         const std::string& treasuryAccountId);
 
-    /// Scaffold: describe a pay-fees LEZ call.
+    /// Legacy fee-transparency scaffold; does not submit a transfer or LEZ call.
     std::string payFees(
         const std::string& institutionAccountId,
         const std::string& payerName,
         const std::string& referenceNumber,
         const std::string& amount);
 
-    /// Scaffold: look up / verify a payment by reference (client-side index later).
+    /// Legacy fee-transparency scaffold; not part of the current ledger API.
     std::string verifyPaymentByRef(const std::string& referenceNumber);
 
-    /// Scaffold: request a multi-sig release.
+    /// Legacy fee-transparency scaffold; does not release funds.
     std::string requestRelease(
         const std::string& institutionAccountId,
         const std::string& categoryAccountId,
@@ -40,7 +41,7 @@ public:
         const std::string& purpose,
         const std::string& evidenceHash);
 
-    /// Scaffold: approve a pending release.
+    /// Legacy fee-transparency scaffold; does not release funds.
     std::string approveRelease(const std::string& releaseAccountId);
 
 logos_events:

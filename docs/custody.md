@@ -1,6 +1,10 @@
-# Fee custody design (LEZ)
+# Superseded fee-custody proposal (historical)
 
-Status: **adopted for v1** (implemented in `programs/sacco_ledger`).
+> **Not the current product design.** This file records an earlier proposal to hold and transfer fee tokens. That proposal was superseded by the SACCO attestation ledger described in the [main README](../README.md) and [architecture](./architecture.md). The current program does not receive, hold, or transfer SACCO money. Deposits, loan disbursements, repayments, and expense payments stay off chain; LEZ stores the associated records and approvals.
+
+The details below are retained only as project history. They do not describe implemented or planned `sacco_ledger` behavior.
+
+## Historical proposal
 
 ## Goal
 

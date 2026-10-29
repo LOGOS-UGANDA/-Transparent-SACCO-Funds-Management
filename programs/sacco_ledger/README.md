@@ -88,17 +88,20 @@ For the pinned LEZ/SPEL/circuits pairing and the scaffold 0.4.x local block-size
 workaround, follow [`docs/deploy.md`](../../docs/deploy.md).
 
 ```bash
-cargo build --release --manifest-path programs/sacco_ledger/methods/Cargo.toml
-logos-scaffold localnet start
-logos-scaffold deploy --program-path \
-  programs/target/riscv-guest/sacco_ledger-methods/sacco_ledger-guest/riscv32im-risc0-zkvm-elf/release/sacco_ledger.bin --json
+RUSTFLAGS='--cfg getrandom_backend="custom"' cargo +risc0 build --release \
+  --target riscv32im-risc0-zkvm-elf \
+  --manifest-path programs/sacco_ledger/methods/guest/Cargo.toml
 ```
 
-The deployed program account ID is specific to the guest binary and deployment.
-Capture the full `program_account_id` from `logos-scaffold deploy --json` and
-keep it with the guest commit used for that deployment. It can change when the
-guest binary changes, including changes that affect compiled debug metadata;
-there is no single canonical ID to hard-code in this README.
+Follow the tested scaffold 0.4.0 workflow in [`docs/deploy.md`](../../docs/deploy.md)
+for local setup, the 1 MiB block-size preparation, deployment, and Initialize
+verification. The latest recorded local run deployed header/program account
+`Ge4zuh3t2Kkg9y59YR9HCmaKwrqX18DvJSV7XRwg55eQ`; Initialize succeeded with
+transaction `074afc038e148a98213f2b6f01a1e04ca38914045baeb0b51ad160ebaaa246fc`
+and verified `ProgramConfig.version = 1` at config PDA
+`GHmW3j89uVbH3NnLzGNUEzfuPLLCa1cBWZdRpczq6vXm`. Program account IDs are
+deployment outputs and may change with guest builds; the runbook preserves the
+commands and full result for this deployment.
 
 ## Known gaps
 

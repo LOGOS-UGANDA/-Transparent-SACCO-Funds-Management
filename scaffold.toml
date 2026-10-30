@@ -22,11 +22,11 @@ build = "nix-flake"
 attr = "cli"
 
 [modules.sacco_core]
-flake = "path:./modules/sacco_core#lgx"
+flake = "git+file:///workspace/transparent-sacco-issue5?dir=modules/sacco_core#lgx"
 role = "project"
 
 [modules.sacco_ui]
-flake = "path:./modules/sacco_ui#lgx"
+flake = "git+file:///workspace/transparent-sacco-issue5?dir=modules/sacco_ui#lgx"
 role = "project"
 
 [wallet]

@@ -3638,4 +3638,3 @@ Approve in the same task that introduces them.
 new arguments, so it only passes from Task 6 onward. Task 2's commit therefore runs the `setup` and
 core tests, not that file; Task 6 runs the full suite that turns it green. Do not tick Task 2's final
 suite until Task 6.
-

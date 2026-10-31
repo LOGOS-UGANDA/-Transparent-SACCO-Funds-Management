@@ -27,4 +27,5 @@ src/artifacts/
 # Rust / LEZ
 target/
 **/methods/guest/target/
+programs/sacco_ledger/ffi/vendor/
 .scaffold

@@ -22,7 +22,7 @@ Basecamp is the right place to **eventually** exercise the product UI + modules.
 2. Open Basecamp and confirm bundled modules load (Package Manager / Modules).
 3. Optionally create an **LEZ wallet account** to learn how accounts and signing work. Token transfers and custom-token exercises are generic LEZ features, not Transparent SACCO flows: this project records off-chain deposits, loans and expenses and does not hold or transfer SACCO funds.
 4. Open the **LEZ explorer / blockchain dashboard** if present — this is the environment `sacco_ledger` will target.
-5. Optionally try a third-party module from a community repo:  
+5. Optionally try a third-party module from a community repo:
    **Settings → Package Repositories → Add** a URL from the [forum thread](https://forum.logos.co/t/basecamp-module-repository-links/1843), then install from Applications.
 
 This does **not** prove Transparent SACCO yet; it proves your Basecamp + LEZ environment works.
@@ -125,15 +125,15 @@ In Basecamp, use **Package Manager → Install LGX Package** and select the `.lg
 
 ### 4. Pass criteria (current scaffold)
 
-- Modules install without variant errors  
-- UI opens  
+- Modules install without variant errors
+- UI opens
 - `getStatus` works; any legacy demo button returns scaffold JSON only
 
 ### 5. Pass criteria (after LEZ wiring — future)
 
-- `RecordDeposit` updates member and SACCO totals (savings vs share capital split)  
+- `RecordDeposit` updates member and SACCO totals (savings vs share capital split)
 - Multi-sig approval → `ExecuteExpense` records evidence that an off-chain payment happened
-- Deposits, loans and expenses verifiable via public accounts / explorer  
+- Deposits, loans and expenses verifiable via public accounts / explorer
 
 ---
 
@@ -141,16 +141,16 @@ In Basecamp, use **Package Manager → Install LGX Package** and select the `.lg
 
 When `logos-repo.json` has a real `indexUrl`:
 
-1. Basecamp → **Settings → Package Repositories → Add** your repo URL  
-2. Install Transparent SACCO from Applications  
-3. Same smoke tests as section E  
+1. Basecamp → **Settings → Package Repositories → Add** your repo URL
+2. Install Transparent SACCO from Applications
+3. Same smoke tests as section E
 
 ---
 
 ## Suggested order
 
-1. Basecamp stack rehearsal (A)  
-2. Prototype UX (B) if you care about screens  
-3. Package + install modules in Basecamp (E) for shell/API smoke  
-4. LEZ program tests + deploy (C)  
+1. Basecamp stack rehearsal (A)
+2. Prototype UX (B) if you care about screens
+3. Package + install modules in Basecamp (E) for shell/API smoke
+4. LEZ program tests + deploy (C)
 5. Wire `sacco_core` → IDL/wallet for attestation of off-chain activity; do not add SACCO fund custody or transfers

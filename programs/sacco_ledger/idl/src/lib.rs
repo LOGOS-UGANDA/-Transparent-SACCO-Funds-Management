@@ -619,6 +619,25 @@ pub const INSTRUCTIONS: &[InstructionSpec] = &[
     },
 ];
 
+/// Return the declarative account metadata for an instruction name.
+pub fn instruction_spec(name: &str) -> Option<&'static InstructionSpec> {
+    INSTRUCTIONS.iter().find(|spec| spec.name == name)
+}
+
+/// JSON-safe account order and authorization metadata for native clients.
+pub fn instruction_accounts_json(name: &str) -> Option<String> {
+    let spec = instruction_spec(name)?;
+    let accounts = spec.accounts.iter().map(|account| {
+        serde_json::json!({
+            "name": account.name,
+            "writable": account.writable,
+            "signer": account.signer,
+            "init": account.init,
+        })
+    });
+    serde_json::to_string(&serde_json::Value::Array(accounts.collect())).ok()
+}
+
 /// The IDL name of an instruction. Exhaustive on purpose: a new variant will
 /// not compile until it is named here and added to `INSTRUCTIONS`.
 #[must_use]

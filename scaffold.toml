@@ -21,6 +21,22 @@ pin = "d3af2972f51d9c542537d80d60ad8d20282ddcd1"
 build = "nix-flake"
 attr = "cli"
 
+[modules.sacco_core]
+flake = "git+file:./?dir=modules/sacco_core#lgx"
+role = "project"
+
+[modules.sacco_ui]
+flake = "git+file:./?dir=modules/sacco_ui#lgx"
+role = "project"
+
+[modules.lez_core]
+flake = "github:logos-blockchain/logos-execution-zone-module/0f4aa1b847c9438fbe257d9ffe5bfe57affea009#lgx"
+role = "dependency"
+
+[modules.lez_indexer_module]
+flake = "github:logos-blockchain/lez-indexer-module/87463b1173fc685dd40f789d5de013c2564519da#lgx"
+role = "dependency"
+
 [wallet]
 home_dir = ".scaffold/wallet"
 

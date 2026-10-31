@@ -96,6 +96,7 @@ private:
     /// the given borsh-shaped field map. Returns the transaction result JSON.
     std::string dispatchInstruction(const std::string& instruction,
                                     const std::string& fieldsJson);
+    void openConfiguredLezWallet();
     std::string readIndexedAccount(const std::string& kind,
                                    const std::string& accountId);
     std::string programId_;

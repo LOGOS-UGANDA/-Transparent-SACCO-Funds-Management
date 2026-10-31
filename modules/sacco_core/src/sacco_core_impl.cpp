@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <stdexcept>
@@ -93,6 +95,20 @@ std::string jstr(const std::string& value) {
 
 }  // namespace
 
+void SaccoCoreImpl::openConfiguredLezWallet() {
+    const char* home = std::getenv("LEE_WALLET_HOME_DIR");
+    if (!home || !*home) home = std::getenv("NSSA_WALLET_HOME_DIR");
+    if (!home || !*home) return;
+
+    const std::filesystem::path directory(home);
+    const auto config = directory / "wallet_config.json";
+    const auto storage = directory / "storage.json";
+    if (!std::filesystem::is_regular_file(config) || !std::filesystem::is_regular_file(storage)) return;
+
+    logos::CallError error;
+    modules().lez_core.open(config.string(), storage.string(), &error);
+}
+
 std::string SaccoCoreImpl::getStatus() {
     // Basecamp calls this during view startup. Keep the health endpoint local and
     // non-blocking: starting the indexer and making synchronous cross-module RPCs
@@ -120,6 +136,7 @@ std::string SaccoCoreImpl::setLedgerContext(const std::string& programId,
             || !isHexAccountId(feePayerId_) || !isHexAccountId(signerId_)) {
             return errorJson("invalid LEZ account identifier");
         }
+        openConfiguredLezWallet();
         logos::CallError walletError;
         const json walletAccounts = modules().lez_core.list_accounts(&walletError);
         if (!walletError.ok() || !walletAccounts.is_array()) {
@@ -143,6 +160,7 @@ std::string SaccoCoreImpl::setLedgerContext(const std::string& programId,
 
 std::string SaccoCoreImpl::createPublicAccount() {
     if (!isContextReady()) return errorJson("module context is not ready");
+    openConfiguredLezWallet();
     const std::string account = modules().lez_core.create_account_public();
     if (account.empty()) return errorJson("LEZ wallet could not create a public account");
     return resultJson("ok", {{"account_id", account}});

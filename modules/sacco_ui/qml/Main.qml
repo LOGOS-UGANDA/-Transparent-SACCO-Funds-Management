@@ -37,12 +37,12 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 24
-        spacing: 16
+        anchors.margins: 12
+        spacing: 8
 
         Text {
             text: "Transparent SACCO"
-            font.pixelSize: 28
+            font.pixelSize: 24
             font.bold: true
             Layout.fillWidth: true
         }
@@ -63,6 +63,7 @@ Item {
         GroupBox {
             title: "Local LEZ transaction context"
             Layout.fillWidth: true
+            Layout.preferredHeight: 216
             GridLayout {
                 anchors.fill: parent
                 columns: 2
@@ -82,55 +83,6 @@ Item {
             }
         }
 
-        RowLayout {
-            spacing: 12
-            Layout.fillWidth: true
-
-            Button {
-                text: "Refresh status"
-                onClicked: refreshStatus()
-            }
-
-            Button {
-                text: "Legacy demo: pay fees"
-                onClicked: callCore("payFees", [
-                    "institution-account-id",
-                    "Demo Payer",
-                    "REF-DEMO-001",
-                    "1000000"
-                ])
-            }
-
-            Button {
-                text: "Legacy demo: verify payment"
-                onClicked: callCore("verifyPaymentByRef", ["REF-DEMO-001"])
-            }
-        }
-
-        GroupBox {
-            title: "Last core response"
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-
-            ScrollView {
-                anchors.fill: parent
-                TextArea {
-                    readOnly: true
-                    wrapMode: TextEdit.Wrap
-                    text: lastResult.length ? lastResult : "No call yet."
-                    selectByMouse: true
-                }
-            }
-        }
-
-        Text {
-            text: "Legacy fee demo only. The SACCO ledger records off-chain activity; this app does not hold or transfer SACCO funds."
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
-            opacity: 0.65
-            font.pixelSize: 12
-        }
-
         TabBar {
             id: roleTabs
             Layout.fillWidth: true
@@ -143,9 +95,23 @@ Item {
             currentIndex: roleTabs.currentIndex
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.minimumHeight: 180
             MemberView { bridge: root.bridge }
             CommitteeView { bridge: root.bridge }
             AuditorView { bridge: root.bridge }
+        }
+
+        GroupBox {
+            title: "Last core response"
+            Layout.fillWidth: true
+            Layout.preferredHeight: 70
+            TextArea {
+                anchors.fill: parent
+                readOnly: true
+                wrapMode: TextEdit.Wrap
+                text: lastResult.length ? lastResult : "No call yet."
+                selectByMouse: true
+            }
         }
     }
 }

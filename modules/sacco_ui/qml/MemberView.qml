@@ -7,9 +7,10 @@ Item {
     id: root
     property var bridge          // the Main.qml logos bridge
     property string memberAccount: ""
+    property string depositAccount: ""
     property var saccoTotals: ({})
     property var myMember: ({})
-    property var myDeposits: []
+    property var myDeposit: ({})
     property var myLoans: []
     property string message: ""
 
@@ -18,9 +19,14 @@ Item {
         try {
             const sacco = JSON.parse(bridge.call("getSacco", []))
             const member = JSON.parse(bridge.call("getMember", [memberAccount]))
-            saccoTotals = sacco.data && sacco.data.state ? sacco.data.state : ({})
-            myMember = member.data && member.data.state ? member.data.state : ({})
-            myDeposits = []
+            saccoTotals = sacco.data ? (sacco.data.state || sacco.data) : ({})
+            myMember = member.data ? (member.data.state || member.data) : ({})
+            if (depositAccount !== "") {
+                const deposit = JSON.parse(bridge.call("getDeposit", [depositAccount]))
+                myDeposit = deposit.data ? (deposit.data.state || deposit.data) : ({})
+            } else {
+                myDeposit = ({})
+            }
             myLoans = []
             if (sacco.status === "indexed_metadata_only" || member.status === "indexed_metadata_only")
                 message = "The indexer sees these accounts, but its current API omits shard bytes, so balances and deposit records cannot be decoded yet."
@@ -32,10 +38,16 @@ Item {
     }
     onMemberAccountChanged: refresh()
 
-    ColumnLayout {
+    ScrollView {
+        id: memberScroll
         anchors.fill: parent
-        anchors.margins: 16
-        spacing: 12
+        clip: true
+
+        ColumnLayout {
+            x: 16
+            y: 16
+            width: memberScroll.availableWidth - 32
+            spacing: 12
 
         Label { text: "My account"; font.bold: true; font.pixelSize: 18 }
         RowLayout {
@@ -82,19 +94,35 @@ Item {
         GroupBox {
             title: "My deposits"
             Layout.fillWidth: true
-            ListView {
-                width: parent.width; height: Math.min(contentHeight, 120)
-                model: root.myDeposits
-                delegate: Label {
-                    text: modelData.amount + " (" + modelData.deposit_type + ") ref " +
-                          modelData.reference +
-                          (modelData.confirmed_by_member ? "  ✓ confirmed" : "  — awaiting my confirmation")
+            ColumnLayout {
+                anchors.fill: parent
+                RowLayout {
+                    Layout.fillWidth: true
+                    TextField {
+                        Layout.fillWidth: true
+                        placeholderText: "deposit ledger account ID"
+                        text: root.depositAccount
+                        onTextChanged: root.depositAccount = text
+                    }
+                    Button { text: "Load deposit"; onClicked: root.refresh() }
                 }
-            }
-            Button {
-                text: "Confirm selected deposit"
-                enabled: root.myDeposits.length > 0
-                onClicked: root.call("confirmDeposit", [root.myDeposits[0].account_id, root.memberAccount])
+                Label {
+                    Layout.fillWidth: true
+                    visible: Object.keys(root.myDeposit).length > 0
+                    text: root.myDeposit.amount
+                          ? root.myDeposit.amount + " (" + root.myDeposit.deposit_type + ") ref "
+                            + root.myDeposit.reference
+                            + (root.myDeposit.confirmed_by_member
+                               ? "  ✓ confirmed" : "  — awaiting my confirmation")
+                          : "No deposit record loaded."
+                    wrapMode: Text.Wrap
+                }
+                Button {
+                    text: "Confirm deposit"
+                    enabled: Object.keys(root.myDeposit).length > 0
+                             && !root.myDeposit.confirmed_by_member
+                    onClicked: root.call("confirmDeposit", [root.depositAccount, root.memberAccount])
+                }
             }
         }
 
@@ -123,6 +151,7 @@ Item {
                 text: "Apply for loan"
                 onClicked: root.call("applyLoan", [root.memberAccount, loanAccount.text, loanAmount.text, loanPurpose.text])
             }
+        }
         }
     }
 
